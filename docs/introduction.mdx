@@ -1,0 +1,83 @@
+---
+title: Introduction
+description: 'Welcome to AgentScope - A production-ready TypeScript agent framework'
+---
+
+## What is AgentScope?
+
+AgentScope is a production-ready, easy-to-use agent framework with essential abstractions that work with rising model capability and built-in support for finetuning.
+
+We design for increasingly agentic LLMs. Our approach leverages the models' reasoning and tool use abilities rather than constraining them with strict prompts and opinionated orchestrations.
+
+## Why use AgentScope?
+
+<CardGroup cols={2}>
+    <Card title="Simple" icon="rocket" href="/getting-started/quickstart">
+        Start building your agents in 5 minutes with built-in ReAct agent, tools, and skills
+    </Card>
+    <Card title="Extensible" icon="puzzle-piece" href="/guides/custom-skills">
+        Large number of ecosystem integrations for tools, memory and observability
+    </Card>
+    <Card title="Production-ready" icon="server" href="/guides/deployment">
+        Deploy and serve your agents locally, as serverless in the cloud, or on your K8s cluster
+    </Card>
+    <Card title="Human-in-the-loop" icon="user" href="/guides/human-in-the-loop">
+        Built-in support for user confirmation and external execution
+    </Card>
+</CardGroup>
+
+## Key Features
+
+- **Event System**: Multi-agent oriented event-driven architecture for tracking agent lifecycle, tool calls, and streaming responses
+- **MCP Support**: Full integration with Model Context Protocol via both HTTP and stdio transports
+- **Skill System**: Extensible skill system for adding custom capabilities with automatic schema generation
+- **Memory Management**: Built-in memory compression and management for long-running conversations
+- **TypeScript First**: Full TypeScript support with comprehensive type definitions
+
+## Quick Example
+
+```typescript
+import { Agent } from '@agentscope-ai/agentscope/agent';
+import { OpenAIModel } from '@agentscope-ai/agentscope/model';
+import { Toolkit, Bash, Read, Write } from '@agentscope-ai/agentscope/tool';
+
+// Create a model
+const model = new OpenAIModel({
+    apiKey: process.env.OPENAI_API_KEY,
+    model: 'gpt-4o',
+});
+
+// Create a toolkit with built-in tools
+const toolkit = new Toolkit({
+    tools: [Bash(), Read(), Write()],
+});
+
+// Initialize an agent
+const agent = new Agent({
+    name: 'Friday',
+    sysPrompt: 'You are a helpful assistant named Friday.',
+    model: model,
+    toolkit: toolkit,
+});
+
+// Use the agent
+const res = await agent.reply();
+console.log(res.text);
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+    <Card title="Installation" icon="download" href="/getting-started/installation">
+        Install AgentScope and set up your development environment
+    </Card>
+    <Card title="Quickstart" icon="play" href="/getting-started/quickstart">
+        Build your first agent in 5 minutes
+    </Card>
+    <Card title="Core Concepts" icon="book" href="/core/overview">
+        Learn about the core concepts and architecture
+    </Card>
+    <Card title="API Reference" icon="code" href="/api-reference/overview">
+        Explore the complete API documentation
+    </Card>
+</CardGroup>

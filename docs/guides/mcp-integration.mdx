@@ -1,0 +1,51 @@
+---
+title: 'MCP Integration'
+description: 'Integrating Model Context Protocol servers'
+---
+
+## What is MCP?
+
+Model Context Protocol (MCP) is a standardized protocol for connecting AI models with external tools and data sources.
+
+## Adding MCP Servers
+
+```typescript
+import { Toolkit } from '@agentscope-ai/agentscope/tool';
+
+const toolkit = new Toolkit({
+    mcpServers: [
+        {
+            name: 'filesystem',
+            transport: 'stdio',
+            command: 'npx',
+            args: ['-y', '@modelcontextprotocol/server-filesystem', '/path/to/dir'],
+        },
+    ],
+});
+```
+
+## Supported Transports
+
+- **stdio**: Standard input/output
+- **http**: HTTP-based communication
+
+## Example: Filesystem Server
+
+```typescript
+const toolkit = new Toolkit({
+    mcpServers: [
+        {
+            name: 'filesystem',
+            transport: 'stdio',
+            command: 'npx',
+            args: ['-y', '@modelcontextprotocol/server-filesystem', process.cwd()],
+        },
+    ],
+});
+
+const agent = new Agent({
+    name: 'Friday',
+    model: model,
+    toolkit: toolkit,
+});
+```

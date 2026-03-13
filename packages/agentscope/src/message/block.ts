@@ -1,0 +1,60 @@
+export interface TextBlock {
+    type: 'text';
+    text: string;
+    id: string;
+}
+
+export interface ThinkingBlock {
+    type: 'thinking';
+    thinking: string;
+    id: string;
+}
+
+export interface HintBlock {
+    type: 'hint';
+    hint: string;
+    id: string;
+}
+
+export interface ToolCallBlock {
+    type: 'tool_call';
+    name: string;
+    id: string;
+    input: string;
+    awaitUserConfirmation?: boolean;
+}
+
+export interface ToolResultBlock {
+    type: 'tool_result';
+    id: string;
+    name: string;
+    output: string | (TextBlock | DataBlock)[];
+    state: 'success' | 'error' | 'interrupted' | 'running';
+}
+
+export interface Base64Source {
+    type: 'base64';
+    data: string;
+    mediaType: string;
+}
+
+export interface URLSource {
+    type: 'url';
+    url: string;
+    mediaType: string;
+}
+
+export interface DataBlock {
+    type: 'data';
+    source: Base64Source | URLSource;
+    id: string;
+    name?: string;
+}
+
+export type ContentBlock =
+    | TextBlock
+    | ThinkingBlock
+    | HintBlock
+    | ToolCallBlock
+    | ToolResultBlock
+    | DataBlock;

@@ -1,0 +1,217 @@
+---
+title: 'Human-in-the-Loop'
+description: 'User confirmation and external execution for agent actions'
+---
+
+## Overview
+
+AgentScope supports two types of human-in-the-loop workflows:
+
+1. **User Confirmation**: Require user approval before executing specific tools (e.g., destructive operations, sensitive data access, external API calls, financial transactions)
+2. **External Execution**: Delegate tool execution to external systems (e.g., IDE integration, sandboxed execution, privileged operations)
+
+## User Confirmation
+
+### Per-Tool Configuration
+
+Mark specific tools as requiring user confirmation:
+
+```typescript
+import { Tool } from '@agentscope-ai/agentscope/tool';
+import { z } from 'zod';
+
+const deleteFileTool: Tool = {
+    name: 'delete_file',
+    description: 'Delete a file from the filesystem',
+    inputSchema: z.object({
+        path: z.string().describe('File path to delete'),
+    }),
+    requireUserConfirm: true, // Require confirmation for this tool
+    call: async ({ path }) => {
+        await fs.unlink(path);
+        return `Deleted ${path}`;
+    },
+};
+
+const toolkit = new Toolkit({
+    tools: [deleteFileTool],
+});
+```
+
+### Capturing Confirmation Events
+
+When an agent encounters a tool requiring confirmation, it yields a `REQUIRE_USER_CONFIRM` event:
+
+```typescript
+import { EventType } from '@agentscope-ai/agentscope/event';
+import { createMsg } from '@agentscope-ai/agentscope/message';
+
+const userMessage = createMsg({
+    role: 'user',
+    name: 'user',
+    content: [{ type: 'text', text: 'Delete config.json' }],
+});
+
+for await (const event of agent.replyStream({ msgs: userMessage })) {
+    if (event.type === EventType.REQUIRE_USER_CONFIRM) {
+        // This event contains the tools awaiting confirmation
+        console.log('Tools requiring confirmation:', event.toolCalls);
+        // event.replyId - The reply session ID
+        // event.toolCalls - Array of ToolCallBlock objects
+        break;
+    }
+}
+```
+
+### Handling Confirmation Events
+
+Once you receive the confirmation event, construct a `USER_CONFIRM_RESULT` event and resume the agent:
+
+```typescript
+import { UserConfirmResultEvent } from '@agentscope-ai/agentscope/event';
+
+// Construct confirmation result event
+const confirmEvent: UserConfirmResultEvent = {
+    id: crypto.randomUUID(),
+    createdAt: new Date().toISOString(),
+    type: EventType.USER_CONFIRM_RESULT,
+    replyId: event.replyId,
+    confirmResults: event.toolCalls.map(toolCall => ({
+        toolCall: toolCall,
+        confirmed: true, // or false to reject
+    })),
+};
+
+// Resume agent with confirmation result
+for await (const resumeEvent of agent.replyStream({ event: confirmEvent })) {
+    // Continue processing events
+}
+```
+
+### MCP Tools with Confirmation
+
+Require confirmation for all tools from an MCP server:
+
+```typescript
+await toolkit.registerMCPClient({
+    client: mcpClient,
+    requireUserConfirm: true, // All MCP tools require confirmation
+});
+```
+
+## External Execution
+
+### Per-Tool Configuration
+
+Mark tools for external execution (agent generates the call, but doesn't execute it):
+
+```typescript
+const bashTool: Tool = {
+    name: 'bash',
+    description: 'Execute shell commands',
+    inputSchema: z.object({
+        command: z.string(),
+    }),
+    requireExternalExecution: true, // Execute externally
+    call: async () => {
+        // This won't be called; execution happens externally
+        throw new Error('Should be executed externally');
+    },
+};
+```
+
+### Capturing External Execution Events
+
+When an agent encounters a tool requiring external execution, it yields a `REQUIRE_EXTERNAL_EXECUTION` event:
+
+```typescript
+for await (const event of agent.replyStream({ msgs: userMessage })) {
+    if (event.type === EventType.REQUIRE_EXTERNAL_EXECUTION) {
+        // This event contains the tools to execute externally
+        console.log('Tools requiring external execution:', event.toolCalls);
+        // event.replyId - The reply session ID
+        // event.toolCalls - Array of ToolCallBlock objects
+        break;
+    }
+}
+```
+
+### Handling External Execution
+
+Construct an `EXTERNAL_EXECUTION_RESULT` event with the execution results and resume the agent:
+
+```typescript
+import { ExternalExecutionResultEvent } from '@agentscope-ai/agentscope/event';
+
+// Execute tools externally and collect results
+const results: ToolResultBlock[] = [
+    {
+        type: 'tool_result',
+        id: toolCall.id,
+        name: toolCall.name,
+        output: [{ type: 'text', text: 'Execution result', id: crypto.randomUUID() }],
+        state: 'success',
+    },
+];
+
+// Construct execution result event
+const resultEvent: ExternalExecutionResultEvent = {
+    id: crypto.randomUUID(),
+    createdAt: new Date().toISOString(),
+    type: EventType.EXTERNAL_EXECUTION_RESULT,
+    replyId: event.replyId,
+    executionResults: results,
+};
+
+// Resume agent with execution results
+for await (const resumeEvent of agent.replyStream({ event: resultEvent })) {
+    // Continue processing events
+}
+```
+
+## Complete Example
+
+A unified function to handle both user confirmation and external execution:
+
+```typescript
+import { Agent } from '@agentscope-ai/agentscope/agent';
+import { AgentEvent } from '@agentscope-ai/agentscope/event';
+import { Msg } from '@agentscope-ai/agentscope/message';
+import { LocalFileStorage } from '@agentscope-ai/agentscope/storage';
+import { OpenAIModel } from '@agentscope-ai/agentscope/model';
+
+async function runAgent(
+    userId: string,
+    sessionId: string,
+    options: {
+        msgs?: Msg | Msg[];
+        event?: AgentEvent;
+    },
+    onEvent: (event: AgentEvent) => void | Promise<void>
+) {
+    // Initialize agent, or you can initialize it outside and reuse across sessions
+    const agent = new Agent({
+        name: 'Friday',
+        sysPrompt: 'You are a helpful assistant.',
+        model: new OpenAIModel({
+            modelName: 'gpt-4o',
+            apiKey: process.env.OPENAI_API_KEY,
+        }),
+        storage: new LocalFileStorage({ rootDir: '~/.agent', sessionId, userId }),
+    });
+    for await (const event of agent.replyStream(options)) {
+        await onEvent(event);
+    }
+}
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+    <Card title="Event System" icon="bolt" href="/core/event">
+        Learn about all event types
+    </Card>
+    <Card title="Tool" icon="wrench" href="/core/tool">
+        Create custom tools
+    </Card>
+</CardGroup>

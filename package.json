@@ -1,0 +1,40 @@
+{
+    "name": "agentscope-monorepo",
+    "version": "1.0.0",
+    "private": true,
+    "description": "AgentScope TypeScript monorepo",
+    "scripts": {
+        "build:agentscope": "pnpm --filter @agentscope-ai/agentscope build",
+        "build:friday": "cd apps/friday && pnpm build",
+        "dev:agentscope": "pnpm --filter @agentscope-ai/agentscope dev",
+        "dev:friday": "cd apps/friday && pnpm dev",
+        "test:agentscope": "pnpm --filter @agentscope-ai/agentscope test",
+        "clean:agentscope": "pnpm --filter @agentscope-ai/agentscope clean",
+        "format": "prettier --write . && eslint . --ext .ts,.tsx --fix",
+        "prepare": "husky"
+    },
+    "lint-staged": {
+        "*.{ts,tsx}": [
+            "eslint --fix",
+            "prettier --write"
+        ],
+        "*.{json,md}": [
+            "prettier --write"
+        ]
+    },
+    "devDependencies": {
+        "@commitlint/cli": "^20.2.0",
+        "@commitlint/config-conventional": "^20.2.0",
+        "@typescript-eslint/eslint-plugin": "^8.49.0",
+        "@typescript-eslint/parser": "^8.49.0",
+        "eslint": "^9.39.1",
+        "eslint-config-prettier": "^10.1.8",
+        "eslint-plugin-import": "^2.32.0",
+        "eslint-plugin-jsdoc": "^61.5.0",
+        "eslint-plugin-prettier": "^5.5.4",
+        "husky": "^9.1.7",
+        "lint-staged": "^16.2.7",
+        "prettier": "^3.7.4",
+        "typescript": "^5.5.3"
+    }
+}

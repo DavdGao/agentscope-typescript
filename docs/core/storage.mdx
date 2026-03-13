@@ -1,0 +1,172 @@
+---
+title: 'Storage'
+description: 'Persist agent state across sessions'
+---
+
+## Overview
+
+Storage backends enable agents to persist conversation context and metadata across sessions. This allows agents to resume work after restarts or maintain state in long-running applications.
+
+## Storage Interface
+
+All storage implementations extend the `StorageBase` class:
+
+```typescript
+abstract class StorageBase {
+    // Load agent state (context + metadata)
+    abstract loadAgentState(options?: { agentId?: string }): Promise<AgentState>;
+
+    // Save agent state (context + metadata)
+    abstract saveAgentState(options: {
+        agentId?: string;
+        context: Msg[];
+        metadata: Record<string, unknown>;
+    }): Promise<void>;
+
+    // Optional: Offload compressed context for agentic search
+    async offloadContext(options: { agentId?: string; msgs: Msg[] }): Promise<string | undefined>;
+}
+```
+
+The agent state includes conversation history and metadata:
+
+```typescript
+interface AgentState {
+    context: Msg[]; // Conversation history
+    metadata: Record<string, unknown>; // Agent metadata (replyId, curIter, curSummary, etc.)
+}
+```
+
+## LocalFileStorage
+
+Persists agent state to the local filesystem with incremental updates and compression boundary tracking:
+
+```typescript
+import { LocalFileStorage } from '@agentscope-ai/agentscope/storage';
+
+const storage = new LocalFileStorage({
+    rootDir: './agent-data', // Root directory for storage
+    sessionId: 'session-123', // Optional: session identifier
+    userId: 'user-456', // Optional: user identifier
+    offloadRootDir: './agent-offload', // Optional: directory for offloaded context
+});
+
+const agent = new Agent({
+    name: 'Friday',
+    model: model,
+    storage: storage,
+});
+```
+
+### Storage Structure
+
+LocalFileStorage organizes files as follows:
+
+```
+agent-data/
+└── {userId}/
+    └── {sessionId}/
+        └── {agentId}/
+            ├── context.jsonl    # Conversation history (JSONL format)
+            └── state.json       # Agent metadata
+```
+
+### Incremental Updates
+
+LocalFileStorage optimizes writes by only appending new messages to `context.jsonl` instead of rewriting the entire file. This is especially efficient for long conversations.
+
+When saving:
+
+1. First save: writes all messages to `context.jsonl`
+2. Subsequent saves: only appends new messages since the last save
+3. Metadata is always fully rewritten to `state.json`
+
+## Usage Example
+
+```typescript
+import { Agent } from '@agentscope-ai/agentscope/agent';
+import { LocalFileStorage } from '@agentscope-ai/agentscope/storage';
+
+// Create storage
+const storage = new LocalFileStorage({
+    rootDir: './agent-data',
+    sessionId: 'session-123',
+    userId: 'user-456',
+});
+
+// Create agent with storage
+const agent = new Agent({
+    name: 'Friday',
+    model: model,
+    storage: storage,
+});
+
+// First conversation
+await agent.reply({ msgs: userMessage1 });
+// State is automatically saved
+
+// Later, create a new agent instance with the same configuration
+const agent2 = new Agent({
+    name: 'Friday', // Same name
+    model: model,
+    storage: new LocalFileStorage({
+        rootDir: './agent-data',
+        sessionId: 'session-123', // Same session
+        userId: 'user-456', // Same user
+    }),
+});
+
+// State is automatically loaded
+await agent2.reply({ msgs: userMessage2 });
+// Agent remembers previous conversation
+```
+
+## Memory Compression with Storage
+
+Storage works seamlessly with memory compression. When compression is enabled, LocalFileStorage tracks the compression boundary and only loads messages after that boundary on subsequent loads:
+
+```typescript
+const agent = new Agent({
+    name: 'Friday',
+    model: model,
+    storage: storage,
+    compressionConfig: {
+        enabled: true,
+        triggerThreshold: 4000,
+        keepRecent: 5,
+    },
+});
+```
+
+When compression occurs:
+
+1. Old messages are compressed into a summary stored in `metadata.curSummary`
+2. The compression boundary (first message ID in current context) is tracked internally
+3. On next load, only messages after the boundary are loaded from `context.jsonl`
+4. The summary is automatically injected into the model's context
+
+## Context Offloading
+
+LocalFileStorage supports offloading compressed context to separate files for agentic search or archival:
+
+```typescript
+const storage = new LocalFileStorage({
+    rootDir: './agent-data',
+    offloadRootDir: './agent-offload', // Enable offloading
+});
+
+// Offload compressed messages
+const offloadPath = await storage.offloadContext({
+    agentId: 'Friday',
+    msgs: compressedMessages,
+});
+// Returns: './agent-offload/{userId}/{sessionId}/{agentId}/2026-03-11.txt'
+```
+
+Offloaded files are organized by date and contain human-readable conversation history.
+
+## Next Steps
+
+<Card title="Agent" icon="robot" href="/core/agent">
+    Learn more about agent configuration
+</Card>

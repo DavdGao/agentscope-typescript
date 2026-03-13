@@ -1,0 +1,529 @@
+import type {
+    ContentBlock,
+    Msg,
+    ToolCallBlock,
+    ToolResultBlock,
+} from '@agentscope-ai/agentscope/message';
+import { formatNumber } from '@shared/utils/common';
+import { Circle } from 'lucide-react';
+import * as mime from 'mime-types';
+import { ReactNode } from 'react';
+import ReactMarkdown from 'react-markdown';
+import rehypeRaw from 'rehype-raw';
+import remarkGfm from 'remark-gfm';
+
+import lineCornerSvg from '@/assets/images/line-corner.svg';
+import lineVerticalSvg from '@/assets/images/line-vertical.svg';
+import { Button } from '@/components/ui/button';
+import { useTranslation } from '@/i18n/useI18n';
+
+// Tool call group, containing multiple tool_call and tool_result pairs
+interface ToolCallGroupBlock {
+    type: 'tool_call_group';
+    id: string;
+    groupType: 'read_group' | 'glob_group' | 'grep_group' | 'tool_group';
+    calls: Array<{
+        call: ToolCallBlock;
+        result?: ToolResultBlock;
+    }>;
+}
+
+// Extend ContentBlock type to include ToolCallGroupBlock
+type ExtendedContentBlock = ContentBlock | ToolCallGroupBlock;
+
+/**
+ * Combine adjacent tool_call and tool_result in message content into tool_call_group
+ * Consecutive Read/Glob/Grep tools will be grouped into their respective groups
+ * Other tools will be mixed into tool_group
+ * @param content
+ * @returns The processed content with tool calls grouped together for better rendering.
+ */
+function groupToolCalls(content: ContentBlock[]): ExtendedContentBlock[] {
+    const result: ExtendedContentBlock[] = [];
+    let currentGroup: Array<{ call: ToolCallBlock; result?: ToolResultBlock }> = [];
+    let currentGroupType: 'read_group' | 'glob_group' | 'grep_group' | 'tool_group' | null = null;
+
+    const getGroupType = (
+        toolName: string
+    ): 'read_group' | 'glob_group' | 'grep_group' | 'tool_group' => {
+        if (toolName === 'Read') return 'read_group';
+        if (toolName === 'Glob') return 'glob_group';
+        if (toolName === 'Grep') return 'grep_group';
+        return 'tool_group';
+    };
+
+    const flushCurrentGroup = () => {
+        if (currentGroup.length > 0 && currentGroupType) {
+            result.push({
+                type: 'tool_call_group',
+                id: crypto.randomUUID(),
+                groupType: currentGroupType,
+                calls: currentGroup,
+            });
+            currentGroup = [];
+            currentGroupType = null;
+        }
+    };
+
+    for (const block of content) {
+        if (block.type === 'tool_call') {
+            const toolGroupType = getGroupType(block.name);
+
+            // If it's Read/Glob/Grep and the group type is different from the current one, start a new group
+            if (toolGroupType !== 'tool_group' && currentGroupType !== toolGroupType) {
+                flushCurrentGroup();
+                currentGroupType = toolGroupType;
+            } else if (toolGroupType === 'tool_group' && currentGroupType !== 'tool_group') {
+                // If it's another tool and the current group is not tool_group, start a new group
+                flushCurrentGroup();
+                currentGroupType = 'tool_group';
+            } else if (!currentGroupType) {
+                // If there's no current group yet, set the group type
+                currentGroupType = toolGroupType;
+            }
+
+            // Collect tool_call
+            currentGroup.push({ call: block });
+        } else if (block.type === 'tool_result') {
+            // Find the corresponding tool_call and add result
+            const matchingCall = currentGroup.find(item => item.call.id === block.id);
+            if (matchingCall) {
+                matchingCall.result = block;
+            } else {
+                // If no corresponding call is found, create a new group (this should not happen in theory)
+                currentGroup.push({
+                    call: {
+                        type: 'tool_call',
+                        id: block.id,
+                        name: block.name,
+                        input: '',
+                    },
+                    result: block,
+                });
+            }
+        } else {
+            // When encountering a non-tool_call/tool_result block, end the current group
+            flushCurrentGroup();
+            result.push(block);
+        }
+    }
+
+    // Process the last group
+    flushCurrentGroup();
+
+    return result;
+}
+
+/**
+ * Extract a parameter value from a tool call input string (JSON).
+ * @param input - The JSON string containing tool parameters
+ * @param key - The parameter key to extract
+ * @returns The extracted parameter value or empty string if not found
+ */
+function extractToolParam(input: string, key: string): string {
+    try {
+        return JSON.parse(input)[key] || '';
+    } catch {
+        const regex = new RegExp(`"${key}":"(.*?)"(,|})`);
+        const match = input.match(regex);
+        return match?.[1] || '';
+    }
+}
+
+/**
+ * Get the appropriate line connector image based on position in a list.
+ * @param index - The current item index
+ * @param total - The total number of items
+ * @returns The appropriate line connector image (corner or vertical)
+ */
+function getLineImage(index: number, total: number): string {
+    return index === total - 1 ? lineCornerSvg : lineVerticalSvg;
+}
+
+/**
+ * Process the JSON string {"key": "value", ...} into a ts style string like (key: "value", ...)
+ * @param input - the JSON object string to process
+ * @returns the processed string that key without quotes and value with quotes, rounded with parentheses
+ */
+function processToolInput(input: string) {
+    try {
+        const obj = JSON.parse(input);
+        const entries = Object.entries(obj).map(([k, v]) => `${k}: "${v}"`);
+        return `${entries.join('\n')}`;
+    } catch {
+        return input;
+    }
+}
+
+/**
+ * The ToolStateIcon component renders an icon representing the state of a tool call based on its states.
+ * @param root0
+ * @param root0.states
+ * @returns A ReactNode representing the icon corresponding to the tool call state.
+ */
+function ToolStateIcon({ states }: { states: (ToolResultBlock['state'] | undefined)[] }) {
+    // If any of the states is 'running' or any one is undefined
+    if (states.includes('running') || states.includes(undefined)) {
+        return (
+            <Circle className="size-2.5 text-muted-foreground fill-muted-foreground animate-pulse shrink-0" />
+        );
+    }
+
+    // If all the states are 'success', show success;
+    if (states.every(state => state === 'success')) {
+        return <Circle className="size-2.5 text-green-500 fill-green-500 shrink-0" />;
+    }
+
+    // If any of the states is 'error', show error;
+    if (states.some(state => state === 'error')) {
+        return <Circle className="size-2.5 text-red-500 fill-red-500 shrink-0" />;
+    }
+
+    // if any of the states is 'interrupted', show interrupted;
+    if (states.some(state => state === 'interrupted')) {
+        return <Circle className="size-2.5 text-yellow-500 fill-yellow-500 shrink-0" />;
+    }
+
+    // Return a default icon if none of the above conditions are met
+    return <Circle className="size-2.5 text-muted-foreground fill-muted-foreground shrink-0" />;
+}
+
+/**
+ * Renders a grouped list of tool calls (Read / Glob / Grep) with a header and indented items.
+ * @param root0 - The component props
+ * @param root0.calls - Array of tool calls with their results
+ * @param root0.label - The label to display for the group
+ * @param root0.paramKey - The parameter key to extract from each call
+ * @param root0.inline - Whether to display items inline or stacked
+ * @returns A ReactNode representing the grouped tool call list
+ */
+function ToolCallGroupList({
+    calls,
+    label,
+    paramKey,
+    inline,
+}: {
+    calls: Array<{ call: ToolCallBlock; result?: ToolResultBlock }>;
+    label: ReactNode;
+    paramKey: string;
+    inline?: boolean;
+}) {
+    return (
+        <div className="flex flex-col w-full">
+            <div className="flex flex-row gap-x-2 w-full max-w-full items-center">
+                <ToolStateIcon states={calls.map(item => item.result?.state)} />
+                {label}
+            </div>
+            <div className={`flex ${inline ? 'flex-row' : 'flex-col'} gap-x-2 pl-6 max-w-full`}>
+                {calls.map((item, index) => (
+                    <div
+                        key={index}
+                        className="flex flex-row gap-x-2 w-full max-w-full items-stretch"
+                    >
+                        <div className="flex-shrink-0 h-full items-center">
+                            <img
+                                src={getLineImage(index, calls.length)}
+                                alt=""
+                                className="w-3 h-full"
+                            />
+                        </div>
+                        <div className="truncate flex-1 min-w-0">
+                            {extractToolParam(item.call.input, paramKey)}
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+}
+
+/**
+ * The RenderToolCallGroup component renders a group of tool calls and their results in a structured format.
+ *
+ * @param root0
+ * @param root0.block
+ * @param root0.index
+ * @param root0.onUserConfirm
+ * @returns A ReactNode representing the rendered tool call group.
+ */
+function ToolCallGroup({
+    block,
+    index,
+    onUserConfirm,
+}: {
+    block: ToolCallGroupBlock;
+    index: number;
+    onUserConfirm?: (toolCallBlock: ToolCallBlock, confirm: boolean) => void;
+}): ReactNode {
+    const { t } = useTranslation();
+    if (block.calls.length === 0) return null;
+
+    const firstNeedConfirm = block.calls.findIndex(item => item.call.awaitUserConfirmation);
+
+    const renderToolCalls =
+        firstNeedConfirm === -1 ? block.calls : block.calls.slice(0, firstNeedConfirm + 1);
+
+    const elements: ReactNode[] = [];
+
+    if (block.groupType === 'read_group') {
+        elements.push(
+            <ToolCallGroupList
+                key="read"
+                calls={renderToolCalls}
+                paramKey="file_path"
+                label={
+                    <span>
+                        <strong className="truncate text-primary">Read </strong>
+                        {renderToolCalls.length} file{renderToolCalls.length > 1 ? 's' : ''}
+                    </span>
+                }
+            />
+        );
+    } else if (block.groupType === 'glob_group' || block.groupType === 'grep_group') {
+        elements.push(
+            <ToolCallGroupList
+                key="search"
+                calls={renderToolCalls}
+                paramKey="pattern"
+                inline
+                label={
+                    <strong className="truncate text-primary">
+                        {block.groupType === 'glob_group' ? 'Glob' : 'Grep'}
+                    </strong>
+                }
+            />
+        );
+    } else {
+        for (const { call, result } of renderToolCalls) {
+            let inputArgs: string;
+            try {
+                switch (call.name) {
+                    case 'Bash':
+                        inputArgs = JSON.parse(call.input).command;
+                        break;
+                    case 'Glob':
+                    case 'Grep':
+                        inputArgs = JSON.parse(call.input).pattern;
+                        break;
+                    case 'Read':
+                    case 'Write':
+                        inputArgs = JSON.parse(call.input).file_path;
+                        break;
+                    default:
+                        inputArgs = call.input.length <= 2 ? '' : call.input;
+                }
+            } catch {
+                inputArgs = call.input.length <= 2 ? '' : call.input;
+            }
+
+            let resultStr: string;
+            if (call.awaitUserConfirmation || !result || result.state === 'running') {
+                resultStr = t('common.running') + ' ...';
+            } else if (result.state === 'interrupted') {
+                resultStr = t('common.interrupted');
+            } else if (typeof result.output === 'string') {
+                resultStr = result.output;
+            } else {
+                const resultStrs = result.output.map(b => {
+                    if (b.type === 'text') return b.text;
+                    const mainType = b.source.mediaType.split('/')[0].toUpperCase();
+                    const extension = (mime.extension(b.source.mediaType) || 'bin').toLowerCase();
+                    return `[${mainType}.${extension}]`;
+                });
+                resultStr = resultStrs.join('\n');
+            }
+
+            let resultArray = resultStr.split('\n');
+            if (resultArray.length > 7) {
+                const totalLines = resultArray.length;
+                resultArray = resultArray.slice(0, 7);
+                resultArray.push(t('chat.moreLines', { count: totalLines - 7 }));
+            }
+
+            elements.push(
+                <div className="flex flex-col w-full max-w-full">
+                    <div className="flex flex-row gap-x-2 w-full max-w-full items-center">
+                        <ToolStateIcon states={[result?.state]} />
+                        <span className="truncate">
+                            <strong className="truncate text-primary">{call.name}</strong>(
+                            {processToolInput(inputArgs)})
+                        </span>
+                    </div>
+                    {resultStr ? (
+                        <div className="flex flex-row gap-x-2 pl-6 max-w-full">
+                            <div className="flex-shrink-0">
+                                <img src={lineCornerSvg} alt="" className="w-3 h-4" />
+                            </div>
+                            <div className="flex flex-col flex-1 min-w-0">
+                                {resultArray.map((line, i) => (
+                                    <div key={i} className="truncate">
+                                        {line}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    ) : null}
+                </div>
+            );
+        }
+    }
+
+    // Need to confirm
+    if (firstNeedConfirm !== -1) {
+        const { call } = block.calls[firstNeedConfirm];
+        elements.push(
+            <div className="border border-border rounded-sm w-full p-4 space-y-4">
+                <div className="flex flex-col gap-y-2">
+                    <div>
+                        <strong>{call.name}</strong> tool
+                    </div>
+                    <div className="p-4 bg-white rounded-sm">{processToolInput(call.input)}</div>
+                    {t('chat.confirmToolCall')}
+                </div>
+                <div className="flex flex-row gap-x-2">
+                    <Button
+                        size="sm"
+                        className="w-16"
+                        onClick={() => {
+                            if (onUserConfirm) {
+                                onUserConfirm(call, true);
+                            }
+                        }}
+                    >
+                        {t('common.yes')}
+                    </Button>
+                    <Button
+                        className="w-16"
+                        variant="outline"
+                        size={'sm'}
+                        onClick={() => {
+                            if (onUserConfirm) {
+                                onUserConfirm(call, false);
+                            }
+                        }}
+                    >
+                        {t('common.no')}
+                    </Button>
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div key={index} className="flex flex-col gap-y-4 text-muted-foreground">
+            {elements}
+        </div>
+    );
+}
+
+/**
+ * Renders a content block based on its type.
+ *
+ * @param block - The content block to render.
+ * @param index - The index of the block in the content array.
+ * @param onUserConfirm
+ * @returns A React element representing the rendered block.
+ */
+function renderBlock(
+    block: ExtendedContentBlock,
+    index: number,
+    onUserConfirm?: (toolCallBlock: ToolCallBlock, confirm: boolean) => void
+) {
+    switch (block.type) {
+        case 'tool_call_group':
+            return <ToolCallGroup block={block} index={index} onUserConfirm={onUserConfirm} />;
+        case 'text':
+            return (
+                <div className="prose">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
+                        {block.text}
+                    </ReactMarkdown>
+                </div>
+            );
+
+        case 'thinking':
+            return (
+                <details key={index} className="text-xs text-muted-foreground">
+                    <summary className="cursor-pointer select-none">Thinking</summary>
+                    <p className="mt-1 whitespace-pre-wrap">{block.thinking}</p>
+                </details>
+            );
+
+        case 'data': {
+            const dataType = block.source.mediaType.split('/')[0];
+            let data: string;
+            if (block.source.type === 'url') {
+                data = block.source.url;
+            } else {
+                data = `data:${block.source.mediaType};base64,${block.source.data}`;
+            }
+            switch (dataType) {
+                case 'image':
+                    return <img src={data} alt="Uploaded image" />;
+                case 'audio':
+                    return <audio controls src={data} />;
+                case 'video':
+                    return <video controls src={data} />;
+            }
+            return null;
+        }
+        default:
+            return null;
+    }
+}
+
+interface MessageBubbleProps {
+    message: Msg & { streaming?: boolean };
+    onUserConfirm: (toolCallBlock: ToolCallBlock, confirm: boolean, replyId: string) => void;
+}
+
+/**
+ * A message bubble component that displays a chat message.
+ *
+ * @param root0 - The component props.
+ * @param root0.message - The message object to display.
+ * @param root0.onUserConfirm
+ * @returns A MessageBubble component.
+ */
+export function MessageBubble({ message, onUserConfirm }: MessageBubbleProps) {
+    const isUser = message.role === 'user';
+
+    const renderContent = () => {
+        if (typeof message.content === 'string') {
+            return <p className="whitespace-pre-wrap">{message.content}</p>;
+        }
+        // Combine adjacent tool_call and tool_result into tool_call_group
+        const processedContent = groupToolCalls(message.content);
+        return processedContent.map((block, i) =>
+            renderBlock(block, i, (toolCall: ToolCallBlock, confirm: boolean) => {
+                onUserConfirm(toolCall, confirm, message.id);
+                toolCall.awaitUserConfirmation = false; // Ensure the confirmation UI is removed after user responds
+            })
+        );
+    };
+
+    return (
+        <div
+            className={`flex flex-col w-full max-w-full ${isUser ? 'items-end' : 'items-start'} mb-4`}
+        >
+            <div
+                className={`p-4 rounded-xl text-sm space-y-2 ${isUser ? 'w-fit max-w-[90%]' : 'w-[90%] max-w-[90%] bg-muted'}`}
+            >
+                {renderContent()}
+            </div>
+            {isUser ? null : (
+                <div className="flex flex-row text-sm text-muted-foreground gap-x-4">
+                    <div className="flex flex-row gap-x-2">
+                        <span>Input Tokens:</span>
+                        <div>{formatNumber(message.usage?.inputTokens || 0)}</div>
+                    </div>
+
+                    <div className="flex flex-row gap-x-2">
+                        <span>Output Tokens:</span>
+                        <div>{formatNumber(message.usage?.outputTokens || 0)}</div>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}

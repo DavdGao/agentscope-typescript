@@ -1,0 +1,366 @@
+---
+title: 'Event System'
+description: 'Track agent execution with fine-grained events'
+---
+
+## Overview
+
+AgentScope uses an event-driven architecture to track every step of agent execution. Events enable real-time streaming, progress tracking, debugging, and frontend integration.
+
+## Event Categories
+
+### Lifecycle Events
+
+- `RUN_STARTED` - Agent execution begins
+- `RUN_FINISHED` - Agent execution completes
+- `EXCEED_MAX_ITERS` - Maximum iterations reached
+
+### Model Events
+
+- `MODEL_CALL_STARTED` - Model API call begins
+- `MODEL_CALL_ENDED` - Model API call completes with token usage
+
+### Content Events
+
+- Text: `TEXT_BLOCK_START`, `TEXT_BLOCK_DELTA`, `TEXT_BLOCK_END`
+- Thinking: `THINKING_BLOCK_START`, `THINKING_BLOCK_DELTA`, `THINKING_BLOCK_END`
+- Binary: `BINARY_BLOCK_START`, `BINARY_BLOCK_DELTA`, `BINARY_BLOCK_END`
+
+### Tool Events
+
+- Tool Call: `TOOL_CALL_START`, `TOOL_CALL_DELTA`, `TOOL_CALL_END`
+- Tool Result: `TOOL_RESULT_START`, `TOOL_RESULT_TEXT_DELTA`, `TOOL_RESULT_BINARY_DELTA`, `TOOL_RESULT_END`
+
+### Human-in-the-Loop Events
+
+- `REQUIRE_USER_CONFIRM` - User confirmation needed
+- `REQUIRE_EXTERNAL_EXECUTION` - External execution needed
+- `USER_CONFIRM_RESULT` - User confirmation result
+- `EXTERNAL_EXECUTION_RESULT` - External execution result
+
+## Event Interfaces
+
+### Base Event
+
+All events extend this base interface:
+
+```typescript
+interface EventBase {
+    id: string; // Unique event ID
+    createdAt: string; // ISO timestamp
+}
+```
+
+### RUN_STARTED
+
+```typescript
+interface RunStartedEvent extends EventBase {
+    type: 'RUN_STARTED';
+    sessionId: string;
+    replyId: string;
+    name: string; // Agent name
+    role: 'user' | 'assistant' | 'system';
+}
+```
+
+### RUN_FINISHED
+
+```typescript
+interface RunFinishedEvent extends EventBase {
+    type: 'RUN_FINISHED';
+    sessionId: string;
+    replyId: string;
+}
+```
+
+### MODEL_CALL_STARTED
+
+```typescript
+interface ModelCallStartedEvent extends EventBase {
+    type: 'MODEL_CALL_STARTED';
+    replyId: string;
+    modelName: string;
+}
+```
+
+### MODEL_CALL_ENDED
+
+```typescript
+interface ModelCallEndedEvent extends EventBase {
+    type: 'MODEL_CALL_ENDED';
+    replyId: string;
+    inputTokens: number;
+    outputTokens: number;
+}
+```
+
+### TEXT_BLOCK_START
+
+```typescript
+interface TextBlockStartEvent extends EventBase {
+    type: 'TEXT_BLOCK_START';
+    replyId: string;
+    blockId: string;
+}
+```
+
+### TEXT_BLOCK_DELTA
+
+```typescript
+interface TextBlockDeltaEvent extends EventBase {
+    type: 'TEXT_BLOCK_DELTA';
+    replyId: string;
+    blockId: string;
+    delta: string; // Incremental text content
+}
+```
+
+### TEXT_BLOCK_END
+
+```typescript
+interface TextBlockEndEvent extends EventBase {
+    type: 'TEXT_BLOCK_END';
+    replyId: string;
+    blockId: string;
+}
+```
+
+### THINKING_BLOCK_START
+
+```typescript
+interface ThinkingBlockStartEvent extends EventBase {
+    type: 'THINKING_BLOCK_START';
+    replyId: string;
+    blockId: string;
+}
+```
+
+### THINKING_BLOCK_DELTA
+
+```typescript
+interface ThinkingBlockDeltaEvent extends EventBase {
+    type: 'THINKING_BLOCK_DELTA';
+    replyId: string;
+    blockId: string;
+    delta: string; // Incremental thinking content
+}
+```
+
+### THINKING_BLOCK_END
+
+```typescript
+interface ThinkingBlockEndEvent extends EventBase {
+    type: 'THINKING_BLOCK_END';
+    replyId: string;
+    blockId: string;
+}
+```
+
+### BINARY_BLOCK_START
+
+```typescript
+interface BinaryBlockStartEvent extends EventBase {
+    type: 'BINARY_BLOCK_START';
+    replyId: string;
+    blockId: string;
+    mediaType: string; // MIME type (e.g., 'image/png')
+}
+```
+
+### BINARY_BLOCK_DELTA
+
+```typescript
+interface BinaryBlockDeltaEvent extends EventBase {
+    type: 'BINARY_BLOCK_DELTA';
+    replyId: string;
+    blockId: string;
+    data: string; // Base64 encoded data
+    mediaType: string;
+}
+```
+
+### BINARY_BLOCK_END
+
+```typescript
+interface BinaryBlockEndEvent extends EventBase {
+    type: 'BINARY_BLOCK_END';
+    replyId: string;
+    blockId: string;
+}
+```
+
+### TOOL_CALL_START
+
+```typescript
+interface ToolCallStartEvent extends EventBase {
+    type: 'TOOL_CALL_START';
+    replyId: string;
+    toolCallId: string;
+    toolCallName: string;
+}
+```
+
+### TOOL_CALL_DELTA
+
+```typescript
+interface ToolCallDeltaEvent extends EventBase {
+    type: 'TOOL_CALL_DELTA';
+    replyId: string;
+    toolCallId: string;
+    delta: string; // Incremental tool input JSON
+}
+```
+
+### TOOL_CALL_END
+
+```typescript
+interface ToolCallEndEvent extends EventBase {
+    type: 'TOOL_CALL_END';
+    replyId: string;
+    toolCallId: string;
+}
+```
+
+### TOOL_RESULT_START
+
+```typescript
+interface ToolResultStartEvent extends EventBase {
+    type: 'TOOL_RESULT_START';
+    replyId: string;
+    toolCallId: string;
+    toolCallName: string;
+}
+```
+
+### TOOL_RESULT_TEXT_DELTA
+
+```typescript
+interface ToolResultTextDeltaEvent extends EventBase {
+    type: 'TOOL_RESULT_TEXT_DELTA';
+    replyId: string;
+    toolCallId: string;
+    delta: string; // Incremental tool output text
+}
+```
+
+### TOOL_RESULT_BINARY_DELTA
+
+```typescript
+interface ToolResultBinaryDeltaEvent extends EventBase {
+    type: 'TOOL_RESULT_BINARY_DELTA';
+    replyId: string;
+    toolCallId: string;
+    mediaType: string;
+    data?: string; // Base64 encoded data
+    url?: string; // Or URL to binary data
+}
+```
+
+### TOOL_RESULT_END
+
+```typescript
+interface ToolResultEndEvent extends EventBase {
+    type: 'TOOL_RESULT_END';
+    replyId: string;
+    toolCallId: string;
+    state: 'success' | 'error' | 'interrupted';
+}
+```
+
+### REQUIRE_USER_CONFIRM
+
+```typescript
+interface RequireUserConfirmEvent extends EventBase {
+    type: 'REQUIRE_USER_CONFIRM';
+    replyId: string;
+    toolCalls: ToolCallBlock[]; // Tools awaiting confirmation
+}
+```
+
+### REQUIRE_EXTERNAL_EXECUTION
+
+```typescript
+interface RequireExternalExecutionEvent extends EventBase {
+    type: 'REQUIRE_EXTERNAL_EXECUTION';
+    replyId: string;
+    toolCalls: ToolCallBlock[]; // Tools to execute externally
+}
+```
+
+### USER_CONFIRM_RESULT
+
+```typescript
+interface UserConfirmResultEvent extends EventBase {
+    type: 'USER_CONFIRM_RESULT';
+    replyId: string;
+    confirmResults: {
+        confirmed: boolean;
+        toolCall: ToolCallBlock;
+    }[];
+}
+```
+
+### EXTERNAL_EXECUTION_RESULT
+
+```typescript
+interface ExternalExecutionResultEvent extends EventBase {
+    type: 'EXTERNAL_EXECUTION_RESULT';
+    replyId: string;
+    executionResults: ToolResultBlock[];
+}
+```
+
+### EXCEED_MAX_ITERS
+
+```typescript
+interface ExceedMaxItersEvent extends EventBase {
+    type: 'EXCEED_MAX_ITERS';
+    replyId: string;
+    agentId: string;
+    name: string;
+}
+```
+
+## Usage Example
+
+```typescript
+import { EventType } from '@agentscope-ai/agentscope/event';
+
+for await (const event of agent.replyStream({ msgs: userMessage })) {
+    switch (event.type) {
+        case EventType.RUN_STARTED:
+            console.log(`Agent ${event.name} started`);
+            break;
+
+        case EventType.MODEL_CALL_STARTED:
+            console.log(`Calling model: ${event.modelName}`);
+            break;
+
+        case EventType.TEXT_BLOCK_DELTA:
+            process.stdout.write(event.delta);
+            break;
+
+        case EventType.TOOL_CALL_START:
+            console.log(`\nCalling tool: ${event.toolCallName}`);
+            break;
+
+        case EventType.TOOL_RESULT_TEXT_DELTA:
+            console.log(`Tool output: ${event.delta}`);
+            break;
+
+        case EventType.MODEL_CALL_ENDED:
+            console.log(`\nTokens: ${event.inputTokens} in, ${event.outputTokens} out`);
+            break;
+
+        case EventType.RUN_FINISHED:
+            console.log('Agent finished');
+            break;
+    }
+}
+```
+
+## Next Steps
+
+<Card title="Streaming Example" icon="code" href="/core/examples/streaming">
+    See complete streaming examples
+</Card>

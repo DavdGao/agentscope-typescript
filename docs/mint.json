@@ -1,0 +1,109 @@
+{
+    "$schema": "https://mintlify.com/schema.json",
+    "name": "AgentScope-Typescript",
+    "logo": {
+        "dark": "/logo/agentscope.svg",
+        "light": "/logo/agentscope.svg"
+    },
+    "favicon": "/logo/agentscope.svg",
+    "colors": {
+        "primary": "#0D9373",
+        "light": "#07C983",
+        "dark": "#0D9373",
+        "anchors": {
+            "from": "#0D9373",
+            "to": "#07C983"
+        }
+    },
+    "topbarLinks": [
+        {
+            "name": "GitHub",
+            "url": "https://github.com/agentscope-ai/agentscope-typescript"
+        }
+    ],
+    "topbarCtaButton": {
+        "name": "Get Started",
+        "url": "/getting-started/installation"
+    },
+    "tabs": [
+        {
+            "name": "API",
+            "url": "api-reference"
+        }
+    ],
+    "anchors": [
+        {
+            "name": "GitHub",
+            "icon": "github",
+            "url": "https://github.com/agentscope-ai/agentscope-typescript"
+        },
+        {
+            "name": "Community",
+            "icon": "discord",
+            "url": "https://discord.gg/your-discord"
+        }
+    ],
+    "navigation": [
+        {
+            "group": "Getting Started",
+            "pages": ["introduction", "getting-started/installation", "getting-started/quickstart"]
+        },
+        {
+            "group": "Core Concepts",
+            "pages": [
+                "core/overview",
+                "core/agent",
+                "core/model",
+                "core/tool",
+                "core/event",
+                "core/storage"
+            ]
+        },
+        {
+            "group": "Guides",
+            "pages": [
+                "guides/mcp-integration",
+                "guides/agent-skills",
+                "guides/human-in-the-loop",
+                "guides/deployment"
+            ]
+        },
+        {
+            "group": "Examples",
+            "pages": [
+                "core/examples/basic-usage",
+                "core/examples/custom-tools",
+                "core/examples/streaming",
+                "core/examples/multi-agent"
+            ]
+        },
+        {
+            "group": "Friday Application",
+            "pages": [
+                "friday/overview",
+                "friday/installation",
+                "friday/user-guide",
+                "friday/architecture",
+                "friday/development"
+            ]
+        },
+        {
+            "group": "API Reference",
+            "pages": [
+                "api-reference/overview",
+                "api-reference/generated/agent",
+                "api-reference/generated/model",
+                "api-reference/generated/tool",
+                "api-reference/generated/event",
+                "api-reference/generated/message",
+                "api-reference/generated/storage",
+                "api-reference/generated/mcp",
+                "api-reference/generated/formatter"
+            ]
+        }
+    ],
+    "footerSocials": {
+        "github": "https://github.com/agentscope-ai/agentscope-typescript",
+        "twitter": "https://twitter.com/agentscope"
+    }
+}

@@ -1,0 +1,175 @@
+---
+title: 'Agent Skills'
+description: 'Create reusable agent capabilities with hot-reloading'
+---
+
+## What are Agent Skills?
+
+Agent Skills are reusable capabilities defined in markdown files (`SKILL.md`) that extend agent functionality. Skills are automatically discovered, hot-reloaded during development, and can be invoked by agents at runtime.
+
+## Skill Structure
+
+Each skill is a directory containing a `SKILL.md` file with YAML frontmatter:
+
+```
+skills/
+└── weather/
+    └── SKILL.md
+```
+
+### SKILL.md Format
+
+```markdown
+---
+name: weather
+description: Get current weather information for any location
+---
+
+# Weather Skill
+
+This skill provides weather information for any location worldwide.
+
+## Usage
+
+To get weather information, provide:
+
+- Location (city name or coordinates)
+- Optional: temperature unit (celsius/fahrenheit)
+
+## Example
+
+"What's the weather in San Francisco?"
+
+## Implementation Details
+
+This skill uses the OpenWeather API to fetch real-time weather data.
+
+## Limitations
+
+- Requires internet connection
+- Limited to current weather (no forecasts)
+```
+
+## Registering Skills
+
+### Single Skill
+
+```typescript
+import { Toolkit } from '@agentscope-ai/agentscope/tool';
+
+const toolkit = new Toolkit({
+    skills: ['./skills/weather'], // Path to skill directory
+});
+```
+
+### Skill Directories
+
+Auto-discover all skills in a directory:
+
+```typescript
+const toolkit = new Toolkit({
+    skillDirs: ['./skills'], // Auto-discover all skills
+});
+```
+
+### Built-in Skill Tool
+
+Enable the `Skill` tool to allow agents to load skill content at runtime:
+
+```typescript
+const toolkit = new Toolkit({
+    skills: ['./skills/weather'],
+    builtInSkillTool: true, // Enable runtime skill loading
+});
+```
+
+When enabled, agents can use the `Skill` tool to read full skill documentation:
+
+```typescript
+// Agent can call: Skill({ name: "weather" })
+// Returns: Full content of weather/SKILL.md
+```
+
+## How Skills Work
+
+1. **Discovery**: Skills are discovered from `skills` paths and `skillDirs` during toolkit initialization
+2. **Prompt Injection**: Skill names and descriptions are automatically injected into the agent's system prompt
+3. **Runtime Access**: If `builtInSkillTool` is enabled, agents can load full skill content using the `Skill` tool
+4. **Hot Reloading**: During development, skill changes are automatically detected and reloaded
+
+## Skills vs Tools
+
+| Feature        | Skills                               | Tools                      |
+| -------------- | ------------------------------------ | -------------------------- |
+| **Definition** | Markdown files                       | TypeScript functions       |
+| **Purpose**    | Domain knowledge & guidelines        | Executable actions         |
+| **Invocation** | Agent reads and follows instructions | Agent calls function       |
+| **Hot Reload** | Yes                                  | No                         |
+| **Use Case**   | Complex workflows, best practices    | API calls, file operations |
+
+## Example: Complete Skill
+
+```markdown
+---
+name: code_review
+description: Perform thorough code reviews following best practices
+---
+
+# Code Review Skill
+
+This skill guides the agent through comprehensive code reviews.
+
+## Review Checklist
+
+1. **Code Quality**
+    - Check for code smells
+    - Verify naming conventions
+    - Assess code complexity
+
+2. **Security**
+    - Look for common vulnerabilities
+    - Check input validation
+    - Review authentication/authorization
+
+3. **Performance**
+    - Identify potential bottlenecks
+    - Check for unnecessary computations
+    - Review database queries
+
+4. **Testing**
+    - Verify test coverage
+    - Check edge cases
+    - Review test quality
+
+## Output Format
+
+Provide feedback in this structure:
+
+- Summary (2-3 sentences)
+- Critical Issues (if any)
+- Suggestions for Improvement
+- Positive Observations
+
+## Example Review
+
+[Include example review here]
+```
+
+## Best Practices
+
+1. **Clear Descriptions**: Write concise, actionable descriptions in frontmatter
+2. **Structured Content**: Use headings and lists for easy parsing
+3. **Examples**: Include concrete examples of skill usage
+4. **Limitations**: Document what the skill cannot do
+5. **Version Control**: Keep skills in version control alongside code
+
+## Next Steps
+
+<CardGroup cols={2}>
+    <Card title="Tool" icon="wrench" href="/core/tool">
+        Learn about tools
+    </Card>
+    <Card title="Agent" icon="robot" href="/core/agent">
+        Use skills with agents
+    </Card>
+</CardGroup>

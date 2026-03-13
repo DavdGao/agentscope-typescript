@@ -1,0 +1,66 @@
+---
+title: 'Friday Overview'
+description: 'An Electron-based AI assistant built with AgentScope'
+---
+
+## What is Friday?
+
+Friday is a desktop AI assistant application built with:
+
+- **AgentScope**: Core agent framework
+- **Electron**: Cross-platform desktop app
+- **React**: Modern UI framework
+- **TypeScript**: Type-safe development
+
+## Features
+
+<CardGroup cols={2}>
+    <Card title="Chat Interface" icon="message">
+        Beautiful chat UI with streaming responses
+    </Card>
+    <Card title="Tool Integration" icon="wrench">
+        Built-in tools for file operations and shell commands
+    </Card>
+    <Card title="MCP Support" icon="plug">
+        Model Context Protocol integration
+    </Card>
+    <Card title="Skill System" icon="puzzle-piece">
+        Extensible skill system for custom capabilities
+    </Card>
+</CardGroup>
+
+## Screenshots
+
+<Frame>
+    <img src="/images/friday-chat.png" alt="Friday Chat Interface" />
+</Frame>
+
+## Architecture
+
+Friday is built as a monorepo application:
+
+```
+apps/friday/
+├── src/
+│   ├── main/           # Electron main process
+│   ├── renderer/       # React frontend
+│   ├── preload/        # Preload scripts
+│   └── shared/         # Shared types and utilities
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+    <Card title="Installation" icon="download" href="/friday/installation">
+        Install and run Friday
+    </Card>
+    <Card title="User Guide" icon="book" href="/friday/user-guide">
+        Learn how to use Friday
+    </Card>
+    <Card title="Architecture" icon="sitemap" href="/friday/architecture">
+        Understand the architecture
+    </Card>
+    <Card title="Development" icon="code" href="/friday/development">
+        Contribute to Friday
+    </Card>
+</CardGroup>

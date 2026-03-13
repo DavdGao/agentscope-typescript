@@ -1,0 +1,72 @@
+---
+title: 'Streaming'
+description: 'Real-time streaming responses'
+---
+
+## Basic Streaming
+
+```typescript
+import { EventType } from '@agentscope-ai/agentscope/event';
+
+for await (const event of agent.replyStream({ content: 'Hello!' })) {
+    if (event.type === EventType.TEXT_BLOCK_DELTA) {
+        process.stdout.write(event.delta);
+    }
+}
+```
+
+## Handling All Events
+
+```typescript
+for await (const event of agent.replyStream({ content: 'What is 2+2?' })) {
+    switch (event.type) {
+        case EventType.RUN_STARTED:
+            console.log('Agent started');
+            break;
+
+        case EventType.TEXT_BLOCK_START:
+            console.log('Text block started');
+            break;
+
+        case EventType.TEXT_BLOCK_DELTA:
+            process.stdout.write(event.delta);
+            break;
+
+        case EventType.TEXT_BLOCK_END:
+            console.log('\nText block ended');
+            break;
+
+        case EventType.TOOL_CALL_START:
+            console.log('Calling tool:', event.toolCallName);
+            break;
+
+        case EventType.RUN_FINISHED:
+            console.log('Agent finished');
+            break;
+    }
+}
+```
+
+## React Integration
+
+```typescript
+function ChatComponent() {
+    const [messages, setMessages] = useState([]);
+
+    const sendMessage = async (input: string) => {
+        for await (const event of agent.replyStream({ content: input })) {
+            if (event.type === EventType.TEXT_BLOCK_DELTA) {
+                setMessages(prev => {
+                    const last = prev[prev.length - 1];
+                    return [...prev.slice(0, -1), {
+                        ...last,
+                        text: last.text + event.delta
+                    }];
+                });
+            }
+        }
+    };
+
+    return <ChatUI messages={messages} onSend={sendMessage} />;
+}
+```

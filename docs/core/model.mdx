@@ -1,0 +1,170 @@
+---
+title: 'Model'
+description: 'Language model integrations with unified interface'
+---
+
+## Supported Models
+
+AgentScope provides a unified interface for multiple language model providers:
+
+<CardGroup cols={2}>
+    <Card title="OpenAI" icon="openai">
+        GPT-4, GPT-3.5, and other OpenAI models
+    </Card>
+    <Card title="DeepSeek" icon="brain">
+        DeepSeek models with extended thinking capabilities
+    </Card>
+    <Card title="DashScope" icon="aliyun">
+        Qwen models from Alibaba Cloud
+    </Card>
+    <Card title="Ollama" icon="server">
+        Local models via Ollama
+    </Card>
+</CardGroup>
+
+## Unified Interface
+
+All models share a common interface with built-in retry and fallback mechanisms:
+
+### call() Method
+
+The primary method for model inference. Supports both streaming and non-streaming responses.
+
+```typescript
+const response = await model.call({
+    messages: [userMessage, ...context],
+    tools: toolSchemas,
+    toolChoice: 'auto',
+});
+```
+
+### Retry Mechanism
+
+Automatically retries failed requests with exponential backoff:
+
+```typescript
+const model = new OpenAIChatModel({
+    modelName: 'gpt-4o',
+    apiKey: process.env.OPENAI_API_KEY,
+    maxRetries: 3, // Retry up to 3 times on failure
+});
+```
+
+### Fallback Support
+
+Automatically switches to a fallback model if the primary model fails:
+
+```typescript
+const model = new OpenAIChatModel({
+    modelName: 'gpt-4o',
+    apiKey: process.env.OPENAI_API_KEY,
+    fallbackModelName: 'gpt-3.5-turbo', // Use this if gpt-4o fails
+});
+```
+
+## Model Implementations
+
+### OpenAI
+
+```typescript
+import { OpenAIChatModel } from '@agentscope-ai/agentscope/model';
+
+const model = new OpenAIChatModel({
+    modelName: 'gpt-4o',
+    apiKey: process.env.OPENAI_API_KEY,
+    stream: true,
+    maxRetries: 3,
+    baseURL: 'https://api.openai.com/v1', // Optional custom endpoint
+    presetGenParams: {
+        temperature: 0.7,
+        top_p: 0.9,
+    },
+});
+```
+
+### DeepSeek
+
+```typescript
+import { DeepSeekChatModel } from '@agentscope-ai/agentscope/model';
+
+const model = new DeepSeekChatModel({
+    modelName: 'deepseek-chat',
+    apiKey: process.env.DEEPSEEK_API_KEY,
+    stream: true,
+    thinkingConfig: {
+        enableThinking: true, // Enable extended thinking mode
+    },
+    presetGenParams: {
+        temperature: 0.7,
+    },
+});
+```
+
+### DashScope (Qwen)
+
+```typescript
+import { DashScopeChatModel } from '@agentscope-ai/agentscope/model';
+
+const model = new DashScopeChatModel({
+    modelName: 'qwen-max',
+    apiKey: process.env.DASHSCOPE_API_KEY,
+    stream: true,
+    presetGenParams: {
+        temperature: 0.7,
+        top_p: 0.8,
+    },
+});
+```
+
+### Ollama
+
+```typescript
+import { OllamaChatModel } from '@agentscope-ai/agentscope/model';
+
+const model = new OllamaChatModel({
+    modelName: 'llama3.1',
+    host: 'http://localhost:11434', // Ollama server address
+    stream: true,
+    keepAlive: '5m', // Keep model loaded for 5 minutes
+    thinkingConfig: {
+        enableThinking: true,
+        thinkingLevel: 'medium',
+    },
+    options: {
+        temperature: 0.7,
+        num_ctx: 4096,
+    },
+});
+```
+
+## Common Parameters
+
+<ParamField path="modelName" type="string" required>
+    Model identifier (e.g., 'gpt-4o', 'deepseek-chat', 'qwen-max', 'llama3.1')
+</ParamField>
+
+<ParamField path="apiKey" type="string" required>
+    API key for authentication (not required for Ollama)
+</ParamField>
+
+<ParamField path="stream" type="boolean" default={true}>
+    Enable streaming responses for real-time output
+</ParamField>
+
+<ParamField path="maxRetries" type="number" default={0}>
+    Maximum number of retry attempts on failure
+</ParamField>
+
+<ParamField path="fallbackModelName" type="string">
+    Fallback model to use if primary model fails
+</ParamField>
+
+<ParamField path="presetGenParams" type="Record<string, unknown>">
+    Default generation parameters (temperature, top_p, etc.)
+</ParamField>
+
+## Next Steps
+
+<Card title="Agent" icon="robot" href="/core/agent">
+    Use models with agents
+</Card>

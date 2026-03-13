@@ -1,0 +1,4 @@
+{
+    "extends": "./tsconfig.json",
+    "exclude": ["packages/agentscope/**/*.test.ts", "../../node_modules"]
+}

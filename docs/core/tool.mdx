@@ -1,0 +1,147 @@
+---
+title: 'Tool'
+description: 'Extend agent capabilities with tools, MCP servers, and skills'
+---
+
+## Toolkit
+
+The `Toolkit` class manages all tools available to an agent. It supports three types of capabilities:
+
+- **Tools**: Built-in or custom function tools
+- **MCP Servers**: Model Context Protocol integrations for standardized tool communication
+- **Skills**: Hot-reloadable agent skills with automatic schema generation
+
+```typescript
+import { Toolkit } from '@agentscope-ai/agentscope/tool';
+
+const toolkit = new Toolkit({
+    tools: [Bash(), Read(), Write()],
+    skills: ['./skills/weather.skill.ts'],
+    skillDirs: ['./skills'], // Auto-load all skills in directory
+});
+```
+
+## Built-in Tools
+
+AgentScope provides the following built-in tools:
+
+| Tool      | Description                                                               |
+| --------- | ------------------------------------------------------------------------- |
+| **Bash**  | Execute shell commands                                                    |
+| **Read**  | Read file contents                                                        |
+| **Write** | Write content to files                                                    |
+| **Edit**  | Edit existing files with find-and-replace                                 |
+| **Glob**  | Search files by pattern (e.g., `**/*.ts`)                                 |
+| **Grep**  | Search file contents with regex                                           |
+| **Skill** | Load full skill documentation at runtime (enabled via `builtInSkillTool`) |
+
+### Usage Example
+
+```typescript
+import { Toolkit, Bash, Read, Write, Edit, Glob, Grep } from '@agentscope-ai/agentscope/tool';
+
+const toolkit = new Toolkit({
+    tools: [Bash(), Read(), Write(), Edit(), Glob(), Grep()],
+});
+
+const agent = new Agent({
+    name: 'Friday',
+    model: model,
+    toolkit: toolkit,
+});
+```
+
+## Creating Custom Tools
+
+Define custom tools using the `Tool` interface:
+
+```typescript
+import { Tool } from '@agentscope-ai/agentscope/tool';
+import { z } from 'zod';
+
+const weatherTool: Tool = {
+    name: 'get_weather',
+    description: 'Get current weather for a location',
+    inputSchema: z.object({
+        location: z.string().describe('City name'),
+        unit: z.enum(['celsius', 'fahrenheit']).optional(),
+    }),
+    call: async ({ location, unit = 'celsius' }) => {
+        // Your implementation
+        const weather = await fetchWeather(location, unit);
+        return `Weather in ${location}: ${weather.temp}°${unit === 'celsius' ? 'C' : 'F'}`;
+    },
+};
+
+const toolkit = new Toolkit({
+    tools: [weatherTool],
+});
+```
+
+## MCP Integration
+
+Register Model Context Protocol servers for standardized tool communication:
+
+```typescript
+import { StdioMCPClient } from '@agentscope-ai/agentscope/mcp';
+
+const mcpClient = new StdioMCPClient({
+    name: 'filesystem',
+    command: 'npx',
+    args: ['-y', '@modelcontextprotocol/server-filesystem', '/path/to/dir'],
+});
+
+await toolkit.registerMCPClient({
+    client: mcpClient,
+    enabledTools: ['read_file', 'write_file'], // Optional: only enable specific tools
+    requireUserConfirm: true, // Require user confirmation for these tools
+});
+```
+
+## Agent Skills
+
+Skills are reusable capabilities defined in markdown files with automatic schema generation. See the [Agent Skills guide](/guides/agent-skills) for details.
+
+```typescript
+const toolkit = new Toolkit({
+    skills: ['./skills/weather.skill.ts'],
+    skillDirs: ['./skills'], // Auto-discover skills
+    builtInSkillTool: true, // Enable the Skill tool for runtime skill loading
+});
+```
+
+## Human-in-the-Loop
+
+Tools can require user confirmation or external execution:
+
+```typescript
+const dangerousTool: Tool = {
+    name: 'delete_file',
+    description: 'Delete a file',
+    inputSchema: z.object({
+        path: z.string(),
+    }),
+    requireUserConfirm: true, // Require user confirmation
+    call: async ({ path }) => {
+        // Delete file
+        await fs.unlink(path);
+        return `Deleted ${path}`;
+    },
+};
+```
+
+See the [Human-in-the-Loop guide](/guides/human-in-the-loop) for more details.
+
+## Next Steps
+
+<CardGroup cols={2}>
+    <Card title="Agent Skills" icon="puzzle-piece" href="/guides/agent-skills">
+        Create reusable agent skills
+    </Card>
+    <Card title="MCP Integration" icon="plug" href="/guides/mcp-integration">
+        Integrate MCP servers
+    </Card>
+    <Card title="Human-in-the-Loop" icon="user" href="/guides/human-in-the-loop">
+        Add user confirmation
+    </Card>
+</CardGroup>

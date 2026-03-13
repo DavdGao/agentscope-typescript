@@ -1,0 +1,95 @@
+{
+    "name": "@agentscope-ai/agentscope",
+    "version": "1.0.0",
+    "description": "",
+    "exports": {
+        "./message": {
+            "import": "./dist/esm/message/index.js",
+            "require": "./dist/cjs/message/index.js",
+            "types": "./dist/types/message/index.d.ts"
+        },
+        "./model": {
+            "import": "./dist/esm/model/index.js",
+            "require": "./dist/cjs/model/index.js",
+            "types": "./dist/types/model/index.d.ts"
+        },
+        "./tool": {
+            "import": "./dist/esm/tool/index.js",
+            "require": "./dist/cjs/tool/index.js",
+            "types": "./dist/types/tool/index.d.ts"
+        },
+        "./agent": {
+            "import": "./dist/esm/agent/index.js",
+            "require": "./dist/cjs/agent/index.js",
+            "types": "./dist/types/agent/index.d.ts"
+        },
+        "./formatter": {
+            "import": "./dist/esm/formatter/index.js",
+            "require": "./dist/cjs/formatter/index.js",
+            "types": "./dist/types/formatter/index.d.ts"
+        },
+        "./event": {
+            "development": "./src/event/index.ts",
+            "import": "./dist/esm/event/index.js",
+            "require": "./dist/cjs/event/index.js",
+            "types": "./dist/types/event/index.d.ts"
+        },
+        "./module": {
+            "import": "./dist/esm/module/index.js",
+            "require": "./dist/cjs/module/index.js",
+            "types": "./dist/types/module/index.d.ts"
+        },
+        "./mcp": {
+            "import": "./dist/esm/mcp/index.js",
+            "require": "./dist/cjs/mcp/index.js",
+            "types": "./dist/types/mcp/index.d.ts"
+        },
+        "./storage": {
+            "import": "./dist/esm/storage/index.js",
+            "require": "./dist/cjs/storage/index.js",
+            "types": "./dist/types/storage/index.d.ts"
+        }
+    },
+    "scripts": {
+        "build": "tsc -p tsconfig.cjs.json && tsc -p tsconfig.esm.json",
+        "dev": "tsc -p tsconfig.esm.json --watch",
+        "test": "jest",
+        "clean": "rm -rf dist",
+        "docs:generate": "typedoc"
+    },
+    "devDependencies": {
+        "@commitlint/cli": "^20.2.0",
+        "@commitlint/config-conventional": "^20.2.0",
+        "@types/jest": "^30.0.0",
+        "@types/mime-types": "^3.0.1",
+        "@types/uuid": "^10.0.0",
+        "@typescript-eslint/eslint-plugin": "^8.49.0",
+        "@typescript-eslint/parser": "^8.49.0",
+        "eslint": "^9.39.1",
+        "eslint-config-prettier": "^10.1.8",
+        "eslint-plugin-import": "^2.32.0",
+        "eslint-plugin-jsdoc": "^61.5.0",
+        "eslint-plugin-prettier": "^5.5.4",
+        "husky": "^9.1.7",
+        "jest": "^30.2.0",
+        "lint-staged": "^16.2.7",
+        "prettier": "^3.7.4",
+        "ts-jest": "^29.4.6",
+        "typedoc": "^0.28.17",
+        "typedoc-plugin-markdown": "^4.10.0",
+        "typescript": "^5.5.3"
+    },
+    "dependencies": {
+        "@cfworker/json-schema": "^4.1.1",
+        "@modelcontextprotocol/sdk": "^1.27.1",
+        "gray-matter": "^4.0.3",
+        "jsonrepair": "^3.13.1",
+        "mime-types": "^3.0.2",
+        "ollama": "^0.6.3",
+        "openai": "^6.16.0",
+        "string-format": "^2.0.0",
+        "uuid": "^13.0.0",
+        "zod": "^4.3.6",
+        "zod-to-json-schema": "^3.25.1"
+    }
+}

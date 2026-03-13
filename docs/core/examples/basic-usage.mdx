@@ -1,0 +1,65 @@
+---
+title: 'Basic Usage'
+description: 'Simple examples to get started'
+---
+
+## Hello World
+
+```typescript
+import { Agent } from '@agentscope-ai/agentscope/agent';
+import { OpenAIModel } from '@agentscope-ai/agentscope/model';
+
+const model = new OpenAIModel({
+    apiKey: process.env.OPENAI_API_KEY,
+    model: 'gpt-4o',
+});
+
+const agent = new Agent({
+    name: 'Assistant',
+    model: model,
+});
+
+const response = await agent.reply({
+    content: 'Hello, world!',
+});
+
+console.log(response.text);
+```
+
+## With Tools
+
+```typescript
+import { Toolkit, Bash } from '@agentscope-ai/agentscope/tool';
+
+const toolkit = new Toolkit({
+    tools: [Bash()],
+});
+
+const agent = new Agent({
+    name: 'Assistant',
+    model: model,
+    toolkit: toolkit,
+});
+
+const response = await agent.reply({
+    content: 'What is the current date?',
+});
+
+console.log(response.text);
+```
+
+## Conversation
+
+```typescript
+const agent = new Agent({
+    name: 'Assistant',
+    model: model,
+});
+
+// First message
+await agent.reply({ content: 'My name is John' });
+
+// Agent remembers context
+const response = await agent.reply({ content: 'What is my name?' });
+console.log(response.text); // "Your name is John"
+```

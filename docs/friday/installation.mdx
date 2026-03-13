@@ -1,0 +1,71 @@
+---
+title: 'Friday Installation'
+description: 'Install and run the Friday desktop application'
+---
+
+## Download
+
+Download the latest release for your platform:
+
+<CardGroup cols={3}>
+    <Card title="macOS" icon="apple">
+        Download .dmg
+    </Card>
+    <Card title="Windows" icon="windows">
+        Download .exe
+    </Card>
+    <Card title="Linux" icon="linux">
+        Download .AppImage
+    </Card>
+</CardGroup>
+
+## Build from Source
+
+### Prerequisites
+
+- Node.js 18.0.0+
+- pnpm 8.0.0+
+
+### Clone and Install
+
+```bash
+git clone https://github.com/agentscope-ai/agentscope-typescript.git
+cd agentscope-typescript
+pnpm install
+```
+
+### Run in Development
+
+```bash
+cd apps/friday
+pnpm dev
+```
+
+### Build for Production
+
+```bash
+cd apps/friday
+pnpm build
+```
+
+## Configuration
+
+Create a configuration file at `~/.friday/config.json`:
+
+```json
+{
+    "models": {
+        "gpt-4": {
+            "provider": "openai",
+            "apiKey": "your-api-key",
+            "model": "gpt-4o"
+        }
+    }
+}
+```
+
+## Next Steps
+
+<Card title="User Guide" icon="book" href="/friday/user-guide">
+    Learn how to use Friday
+</Card>

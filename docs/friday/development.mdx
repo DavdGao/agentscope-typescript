@@ -1,0 +1,62 @@
+---
+title: 'Development Guide'
+description: 'Contributing to Friday development'
+---
+
+## Development Setup
+
+### Prerequisites
+
+- Node.js 18.0.0+
+- pnpm 8.0.0+
+- Git
+
+### Clone and Install
+
+```bash
+git clone https://github.com/agentscope-ai/agentscope-typescript.git
+cd agentscope-typescript
+pnpm install
+```
+
+### Project Structure
+
+```
+apps/friday/
+├── src/
+│   ├── main/           # Electron main process
+│   │   ├── agent/      # Agent management
+│   │   ├── services/   # Backend services
+│   │   └── index.ts    # Entry point
+│   ├── renderer/       # React frontend
+│   │   ├── components/ # UI components
+│   │   ├── hooks/      # React hooks
+│   │   └── pages/      # Page components
+│   ├── preload/        # Preload scripts
+│   └── shared/         # Shared types
+```
+
+## Development Workflow
+
+### Run in Development Mode
+
+```bash
+cd apps/friday
+pnpm dev
+```
+
+### Build for Production
+
+```bash
+pnpm build
+```
+
+### Run Tests
+
+```bash
+pnpm test
+```
+
+## Contributing
+
+See the main repository for contribution guidelines.

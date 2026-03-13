@@ -1,0 +1,75 @@
+---
+title: 'API Reference'
+description: 'Complete API documentation for AgentScope'
+---
+
+## Overview
+
+This section contains auto-generated API documentation for all AgentScope modules. The documentation is generated from TypeScript source code and JSDoc comments.
+
+## Modules
+
+<CardGroup cols={2}>
+    <Card title="Agent" icon="robot" href="/api-reference/generated/agent">
+        Agent class and configuration options
+    </Card>
+    <Card title="Model" icon="brain" href="/api-reference/generated/model">
+        Language model integrations and base classes
+    </Card>
+    <Card title="Tool" icon="wrench" href="/api-reference/generated/tool">
+        Tool and Toolkit APIs for extending agent capabilities
+    </Card>
+    <Card title="Event" icon="bolt" href="/api-reference/generated/event">
+        Event types and interfaces for agent lifecycle tracking
+    </Card>
+    <Card title="Message" icon="message" href="/api-reference/generated/message">
+        Message structures and content blocks
+    </Card>
+    <Card title="Storage" icon="database" href="/api-reference/generated/storage">
+        Storage backends for persisting agent state
+    </Card>
+    <Card title="MCP" icon="plug" href="/api-reference/generated/mcp">
+        Model Context Protocol client implementations
+    </Card>
+    <Card title="Formatter" icon="code" href="/api-reference/generated/formatter">
+        Message formatters for different model providers
+    </Card>
+</CardGroup>
+
+## Documentation Structure
+
+Each module page includes:
+
+- **Classes**: Exported classes with constructors, methods, and properties
+- **Interfaces**: Type definitions and configuration options
+- **Type Aliases**: Custom types and enums
+- **Functions**: Utility functions and helpers
+
+## Updating Documentation
+
+The API documentation is automatically generated from source code. To update:
+
+```bash
+cd packages/agentscope
+pnpm docs:generate
+```
+
+This will regenerate all API documentation based on the latest code and JSDoc comments.
+
+## Contributing
+
+When adding new features or modifying APIs:
+
+1. Add comprehensive JSDoc comments to your code
+2. Include `@param` tags for all parameters
+3. Include `@returns` tags for return values
+4. Add usage examples in JSDoc when helpful
+5. Run `pnpm docs:generate` to update the API docs
+
+## Related Documentation
+
+For conceptual guides and usage examples, see:
+
+- [Core Concepts](/core/overview) - High-level concepts and architecture
+- [Guides](/guides/mcp-integration) - Step-by-step guides for common tasks
+- [Examples](/core/examples/basic-usage) - Code examples and patterns

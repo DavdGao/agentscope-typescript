@@ -1,0 +1,141 @@
+---
+title: 'Quickstart'
+description: 'Build your first agent in 5 minutes'
+---
+
+## Your First Agent
+
+Let's build a simple agent that can answer questions and use tools.
+
+### Step 1: Import Dependencies
+
+```typescript
+import { Agent } from '@agentscope-ai/agentscope/agent';
+import { OpenAIModel } from '@agentscope-ai/agentscope/model';
+import { Toolkit, Bash } from '@agentscope-ai/agentscope/tool';
+```
+
+### Step 2: Create a Model
+
+```typescript
+const model = new OpenAIModel({
+    apiKey: process.env.OPENAI_API_KEY,
+    model: 'gpt-4o',
+});
+```
+
+<Tip>
+    You can use different models like `DashScopeModel` or `AnthropicModel` by importing them from
+    the respective modules.
+</Tip>
+
+### Step 3: Create a Toolkit (Optional)
+
+```typescript
+const toolkit = new Toolkit({
+    tools: [Bash()],
+});
+```
+
+### Step 4: Initialize the Agent
+
+```typescript
+const agent = new Agent({
+    name: 'Friday',
+    sysPrompt: 'You are a helpful assistant named Friday.',
+    model: model,
+    toolkit: toolkit,
+});
+```
+
+### Step 5: Get a Response
+
+```typescript
+const response = await agent.reply({
+    content: 'What is the current date?',
+});
+
+console.log(response.text);
+```
+
+## Complete Example
+
+Here's the complete code:
+
+```typescript index.ts
+import { Agent } from '@agentscope-ai/agentscope/agent';
+import { OpenAIModel } from '@agentscope-ai/agentscope/model';
+import { Toolkit, Bash } from '@agentscope-ai/agentscope/tool';
+
+async function main() {
+    // Create a model
+    const model = new OpenAIModel({
+        apiKey: process.env.OPENAI_API_KEY,
+        model: 'gpt-4o',
+    });
+
+    // Create a toolkit
+    const toolkit = new Toolkit({
+        tools: [Bash()],
+    });
+
+    // Initialize an agent
+    const agent = new Agent({
+        name: 'Friday',
+        sysPrompt: 'You are a helpful assistant named Friday.',
+        model: model,
+        toolkit: toolkit,
+    });
+
+    // Get a response
+    const response = await agent.reply({
+        content: 'What is the current date?',
+    });
+
+    console.log(response.text);
+}
+
+main();
+```
+
+Run it:
+
+```bash
+npx tsx index.ts
+```
+
+## Streaming Responses
+
+For real-time streaming responses:
+
+```typescript
+import { EventType } from '@agentscope-ai/agentscope/event';
+
+for await (const event of agent.replyStream({ content: 'Hello!' })) {
+    switch (event.type) {
+        case EventType.TEXT_BLOCK_DELTA:
+            process.stdout.write(event.delta);
+            break;
+        case EventType.TEXT_BLOCK_END:
+            process.stdout.write('\n');
+            break;
+    }
+}
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+    <Card title="Core Concepts" icon="book" href="/core/overview">
+        Learn about agents, models, and tools
+    </Card>
+    <Card title="Custom Tools" icon="wrench" href="/core/examples/custom-tools">
+        Create your own custom tools
+    </Card>
+    <Card title="Event System" icon="bolt" href="/core/event">
+        Understand the event-driven architecture
+    </Card>
+    <Card title="API Reference" icon="code" href="/api-reference/agent">
+        Explore the complete API
+    </Card>
+</CardGroup>

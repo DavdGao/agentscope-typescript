@@ -1,0 +1,92 @@
+---
+title: 'Installation'
+description: 'Install AgentScope and set up your development environment'
+---
+
+## Requirements
+
+Before installing AgentScope, make sure you have:
+
+- **Node.js**: 18.0.0 or higher (20.x recommended)
+- **Package Manager**: pnpm 8.0.0+ (recommended) or npm
+
+## Install AgentScope
+
+<CodeGroup>
+
+```bash npm
+npm install @agentscope-ai/agentscope
+```
+
+```bash pnpm
+pnpm add @agentscope-ai/agentscope
+```
+
+```bash yarn
+yarn add @agentscope-ai/agentscope
+```
+
+</CodeGroup>
+
+## Environment Setup
+
+Create a `.env` file in your project root and add your API keys:
+
+```bash
+OPENAI_API_KEY=your_openai_api_key
+ANTHROPIC_API_KEY=your_anthropic_api_key
+DASHSCOPE_API_KEY=your_dashscope_api_key
+```
+
+<Warning>
+    Never commit your `.env` file to version control. Add it to your `.gitignore` file.
+</Warning>
+
+## Verify Installation
+
+Create a simple test file to verify your installation:
+
+```typescript test.ts
+import { Agent } from '@agentscope-ai/agentscope/agent';
+import { OpenAIModel } from '@agentscope-ai/agentscope/model';
+
+const model = new OpenAIModel({
+    apiKey: process.env.OPENAI_API_KEY,
+    model: 'gpt-4o',
+});
+
+const agent = new Agent({
+    name: 'TestAgent',
+    model: model,
+});
+
+console.log('AgentScope installed successfully!');
+```
+
+Run the test:
+
+```bash
+npx tsx test.ts
+```
+
+## TypeScript Configuration
+
+If you're using TypeScript, make sure your `tsconfig.json` includes:
+
+```json tsconfig.json
+{
+    "compilerOptions": {
+        "target": "ES2020",
+        "module": "ESNext",
+        "moduleResolution": "bundler",
+        "esModuleInterop": true,
+        "strict": true
+    }
+}
+```
+
+## Next Steps
+
+<Card title="Quickstart Guide" icon="play" href="/getting-started/quickstart">
+    Build your first agent in 5 minutes
+</Card>

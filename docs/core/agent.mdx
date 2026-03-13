@@ -1,0 +1,170 @@
+---
+title: 'Agent'
+description: 'The core orchestrator for AI agent workflows'
+---
+
+## What is an Agent?
+
+An Agent is the central component that orchestrates interactions between language models, tools, and storage. It manages the ReAct (Reasoning + Acting) loop, handles tool execution, and maintains conversation context with automatic memory compression.
+
+## Creating an Agent
+
+### Basic Configuration
+
+```typescript
+import { Agent } from '@agentscope-ai/agentscope/agent';
+import { OpenAIModel } from '@agentscope-ai/agentscope/model';
+
+const agent = new Agent({
+    name: 'Friday',
+    sysPrompt: 'You are a helpful assistant.',
+    model: new OpenAIModel({
+        modelName: 'gpt-4o',
+        apiKey: process.env.OPENAI_API_KEY,
+    }),
+});
+```
+
+### Basic Usage
+
+The agent provides two main methods for generating responses:
+
+#### reply()
+
+Generates a complete response by consuming all streaming events internally. Returns the final message when complete.
+
+```typescript
+const response = await agent.reply({
+    msgs: createMsg({
+        role: 'user',
+        name: 'user',
+        content: [{ type: 'text', text: 'What is the weather today?' }],
+    }),
+});
+
+console.log(response.content[0].text);
+```
+
+**Parameters:**
+
+| Parameter       | Type           | Description                                       |
+| --------------- | -------------- | ------------------------------------------------- |
+| `options.msgs`  | `Msg \| Msg[]` | Incoming message(s) to process                    |
+| `options.event` | `AgentEvent`   | Optional event for human-in-the-loop continuation |
+
+**Returns:** `Promise<Msg>` - The final response message
+
+#### replyStream()
+
+Streams the agent's response as events in real-time, allowing you to track every step of the reasoning and acting process.
+
+```typescript
+import { EventType } from '@agentscope-ai/agentscope/event';
+
+for await (const event of agent.replyStream({ msgs: userMessage })) {
+    switch (event.type) {
+        case EventType.TEXT_BLOCK_DELTA:
+            process.stdout.write(event.delta);
+            break;
+        case EventType.TOOL_CALL_START:
+            console.log(`\nCalling tool: ${event.toolCallName}`);
+            break;
+    }
+}
+```
+
+**Parameters:**
+
+| Parameter       | Type           | Description                                       |
+| --------------- | -------------- | ------------------------------------------------- |
+| `options.msgs`  | `Msg \| Msg[]` | Incoming message(s) to process                    |
+| `options.event` | `AgentEvent`   | Optional event for human-in-the-loop continuation |
+
+**Returns:** `AsyncGenerator<AgentEvent, Msg>` - Stream of events, final value is the response message
+
+#### Key Differences
+
+| Feature               | `reply()`                  | `replyStream()`                 |
+| --------------------- | -------------------------- | ------------------------------- |
+| **Response**          | Returns final message only | Yields events + final message   |
+| **Real-time updates** | No                         | Yes                             |
+| **Use case**          | Simple request-response    | UI streaming, progress tracking |
+| **Performance**       | Slightly faster            | Enables progressive rendering   |
+
+### With Tools
+
+```typescript
+import { Toolkit } from '@agentscope-ai/agentscope/tool';
+import { Bash, Read, Write } from '@agentscope-ai/agentscope/tool';
+
+const agent = new Agent({
+    name: 'Friday',
+    sysPrompt: 'You are a helpful assistant.',
+    model: model,
+    toolkit: new Toolkit({
+        tools: [Bash(), Read(), Write()],
+    }),
+});
+```
+
+### With Memory Compression
+
+```typescript
+const agent = new Agent({
+    name: 'Friday',
+    sysPrompt: 'You are a helpful assistant.',
+    model: model,
+    compressionConfig: {
+        enabled: true,
+        triggerThreshold: 4000, // Trigger when context exceeds 4000 tokens
+        keepRecent: 5, // Keep last 5 message blocks uncompressed
+    },
+});
+```
+
+## Configuration Options
+
+<ParamField path="name" type="string" required>
+    The name of the agent
+</ParamField>
+
+<ParamField path="sysPrompt" type="string" required>
+    System prompt that defines the agent's behavior and capabilities
+</ParamField>
+
+<ParamField path="model" type="ChatModelBase" required>
+    The language model instance to use
+</ParamField>
+
+<ParamField path="toolkit" type="Toolkit">
+    Toolkit containing tools, MCP servers, and skills
+</ParamField>
+
+<ParamField path="maxIters" type="number" default={20}>
+    Maximum reasoning-acting iterations before forcing a final response
+</ParamField>
+
+<ParamField path="storage" type="StorageBase">
+    Storage backend for persisting agent state across sessions
+</ParamField>
+
+<ParamField path="compressionConfig" type="CompressionConfig">
+    Configuration for automatic memory compression when context grows too large
+</ParamField>
+
+## Next Steps
+
+<CardGroup cols={2}>
+    <Card title="Model" icon="brain" href="/core/model">
+        Learn about model integrations
+    </Card>
+    <Card title="Tool" icon="wrench" href="/core/tool">
+        Add tools to your agent
+    </Card>
+    <Card title="Event System" icon="bolt" href="/core/event">
+        Understand agent events
+    </Card>
+    <Card title="Storage" icon="database" href="/core/storage">
+        Persist agent state
+    </Card>
+</CardGroup>

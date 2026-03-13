@@ -1,0 +1,52 @@
+---
+title: 'Multi-Agent'
+description: 'Coordinating multiple agents'
+---
+
+## Creating Multiple Agents
+
+```typescript
+const researcher = new Agent({
+    name: 'Researcher',
+    sysPrompt: 'You are a research assistant.',
+    model: model,
+});
+
+const writer = new Agent({
+    name: 'Writer',
+    sysPrompt: 'You are a content writer.',
+    model: model,
+});
+```
+
+## Agent Collaboration
+
+```typescript
+// Researcher gathers information
+const research = await researcher.reply({
+    content: 'Research the history of AI',
+});
+
+// Writer creates content based on research
+const article = await writer.reply({
+    content: `Write an article based on this research: ${research.text}`,
+});
+
+console.log(article.text);
+```
+
+## Message Hub
+
+```typescript
+import { MessageHub } from '@agentscope-ai/agentscope/message';
+
+const hub = new MessageHub();
+
+hub.on('message', msg => {
+    console.log(`${msg.name}: ${msg.text}`);
+});
+
+// Agents communicate through the hub
+await researcher.reply({ content: 'Hello' }, { hub });
+await writer.reply({ content: 'Hi there' }, { hub });
+```
