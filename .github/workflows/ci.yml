@@ -41,6 +41,9 @@ jobs:
             - name: Build agentscope package
               run: pnpm run build:agentscope
 
+            - name: Build friday app
+              run: pnpm run build:friday
+
             - name: Run unit tests
               run: pnpm run test:agentscope
 
