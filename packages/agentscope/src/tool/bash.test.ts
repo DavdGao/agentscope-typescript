@@ -56,7 +56,8 @@ describe('Bash', () => {
     test('Timeout command', async () => {
         const bash = Bash();
         // Use cross-platform sleep command
-        const command = process.platform === 'win32' ? 'timeout /t 5 /nobreak' : 'sleep 5';
+        // On Windows, use ping as a delay mechanism (more reliable than timeout in non-interactive mode)
+        const command = process.platform === 'win32' ? 'ping 127.0.0.1 -n 6 > nul' : 'sleep 5';
         const result = await bash.call({
             command,
             timeout: 1000, // 1 second timeout
@@ -70,7 +71,8 @@ describe('Bash', () => {
 
     test('Command with custom timeout that succeeds', async () => {
         const bash = Bash();
-        const command = process.platform === 'win32' ? 'timeout /t 1 /nobreak' : 'sleep 1';
+        // On Windows, use ping as a delay (ping waits ~1 second per count)
+        const command = process.platform === 'win32' ? 'ping 127.0.0.1 -n 2 > nul' : 'sleep 1';
         const result = await bash.call({
             command,
             timeout: 3000, // 3 second timeout
