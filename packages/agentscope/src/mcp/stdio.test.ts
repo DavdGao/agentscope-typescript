@@ -4,7 +4,10 @@ import * as path from 'path';
 import { StdioMCPClient } from './stdio';
 import { Toolkit } from '../tool';
 
-describe('StdIOMCPClient', () => {
+// Skip these tests on Windows due to npx/npm cache issues with MCP server packages
+const describeUnlessWindows = process.platform === 'win32' ? describe.skip : describe;
+
+describeUnlessWindows('StdIOMCPClient', () => {
     const testDir = path.join(__dirname, 'test-data');
     const testFilePath = path.join(testDir, 'test-file.txt');
     const testContent = 'Hello, this is a test file for MCP filesystem server!';
