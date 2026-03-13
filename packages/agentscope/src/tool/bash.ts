@@ -108,15 +108,18 @@ While the Bash tool can do similar things, it's better to use the built-in tools
                     shell,
                 });
 
+                // Normalize line endings to LF for cross-platform consistency
+                const normalizedOutput = stdout.replace(/\r\n/g, '\n');
+
                 const maxOutputLength = 30000;
-                if (stdout.length > maxOutputLength) {
+                if (normalizedOutput.length > maxOutputLength) {
                     return createToolResponse({
                         content: [
                             {
                                 id: crypto.randomUUID(),
                                 type: 'text',
                                 text:
-                                    stdout.substring(0, maxOutputLength) +
+                                    normalizedOutput.substring(0, maxOutputLength) +
                                     '\n\n[Output truncated - exceeded 30000 characters]',
                             },
                         ],
@@ -125,14 +128,14 @@ While the Bash tool can do similar things, it's better to use the built-in tools
                 }
 
                 return createToolResponse({
-                    content: [{ id: crypto.randomUUID(), type: 'text', text: stdout }],
+                    content: [{ id: crypto.randomUUID(), type: 'text', text: normalizedOutput }],
                     state: 'success',
                 });
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
             } catch (error: any) {
                 const errorMessage = error.message || 'Unknown error';
-                const stderr = error.stderr?.toString() || '';
-                const stdout = error.stdout?.toString() || '';
+                const stderr = error.stderr?.toString().replace(/\r\n/g, '\n') || '';
+                const stdout = error.stdout?.toString().replace(/\r\n/g, '\n') || '';
 
                 let result = `Command failed: ${command}\n`;
                 if (stdout) result += `\nStdout:\n${stdout}`;
