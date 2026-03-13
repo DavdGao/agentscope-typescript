@@ -62,6 +62,17 @@ jobs:
             - name: Build agentscope package
               run: pnpm run build:agentscope
 
+            - name: Test package installation
+              run: |
+                  cd packages/agentscope
+                  npm pack
+                  mkdir -p ../../test-install
+                  cd ../../test-install
+                  npm init -y
+                  npm install ../packages/agentscope/*.tgz
+                  node -e "const { Agent } = require('@agentscope-ai/agentscope/agent'); console.log('CJS import successful:', typeof Agent === 'function');"
+                  node --input-type=module -e "import { Agent } from '@agentscope-ai/agentscope/agent'; console.log('ESM import successful:', typeof Agent === 'function');"
+
             - name: Build friday app
               run: pnpm run build:friday
 
