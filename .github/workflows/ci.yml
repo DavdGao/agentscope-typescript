@@ -66,6 +66,9 @@ jobs:
               run: pnpm run build:friday
 
             - name: Run unit tests
+              env:
+                  DASHSCOPE_API_KEY: ${{ secrets.DASHSCOPE_API_KEY }}
+                  GAODE_API_KEY: ${{ secrets.GAODE_API_KEY }}
               run: pnpm run test:agentscope
 
             - name: Upload test coverage

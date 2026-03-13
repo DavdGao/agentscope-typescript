@@ -1,5 +1,5 @@
 import { HTTPMCPClient } from './http';
-import { Toolkit } from '../tool';
+import { Toolkit, ToolResponse } from '../tool';
 
 describe('HTTPStatefulMCPClient', () => {
     test('Create AMAP MCP client, list and execute tools', async () => {
@@ -181,8 +181,10 @@ describe('HTTPStatelessMCPClient', () => {
             type: 'tool_call',
             input: `{"address": "Tiananmen", "city": "Beijing"}`,
         });
+        const collectedRes: ToolResponse[] = [];
         for await (const item of res) {
-            console.log(item);
+            collectedRes.push(item);
         }
+        expect(collectedRes.length).toBe(1);
     }, 10000);
 });
