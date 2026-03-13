@@ -1,0 +1,106 @@
+name: Bug Report
+description: Create a report to help us locate and fix the bug
+title: 'bug: '
+labels: ['bug']
+body:
+    - type: markdown
+      attributes:
+          value: |
+              > **This is an open-source project. To involve a broader community, we recommend describing your issue in English.**
+
+    - type: textarea
+      id: description
+      attributes:
+          label: Describe the Bug
+          description: A clear and concise description of what the bug is.
+          placeholder: A clear and concise description of what the bug is.
+      validations:
+          required: true
+
+    - type: textarea
+      id: reproduce
+      attributes:
+          label: To Reproduce
+          description: Steps to reproduce the behavior.
+          value: |
+              1. Your code
+              2. How to execute (e.g. `npx ts-node index.ts`)
+              3. See error
+      validations:
+          required: true
+
+    - type: textarea
+      id: expected
+      attributes:
+          label: Expected Behavior
+          description: A clear and concise description of what you expected to happen.
+          placeholder: What did you expect to happen?
+      validations:
+          required: true
+
+    - type: textarea
+      id: error
+      attributes:
+          label: Error Messages
+          description: Paste the full error message or stack trace here.
+          render: shell
+      validations:
+          required: false
+
+    - type: input
+      id: package-version
+      attributes:
+          label: Package Version
+          description: 'Run `npm list <package-name>` or check your `package.json`'
+          placeholder: 'e.g. 1.0.0'
+      validations:
+          required: true
+
+    - type: input
+      id: node-version
+      attributes:
+          label: Node.js Version
+          description: 'Run `node -v`'
+          placeholder: 'e.g. 20.10.0'
+      validations:
+          required: true
+
+    - type: input
+      id: ts-version
+      attributes:
+          label: TypeScript Version
+          description: 'Run `npx tsc -v`'
+          placeholder: 'e.g. 5.3.3'
+      validations:
+          required: true
+
+    - type: dropdown
+      id: os
+      attributes:
+          label: Operating System
+          options:
+              - macOS
+              - Windows
+              - Linux
+              - Other
+      validations:
+          required: true
+
+    - type: textarea
+      id: additional
+      attributes:
+          label: Additional Context
+          description: Add any other context about the problem here (screenshots, related issues, etc.)
+          placeholder: Any other context...
+      validations:
+          required: false
+
+    - type: checkboxes
+      id: confirm
+      attributes:
+          label: Checklist
+          options:
+              - label: I have searched existing issues and confirmed this is not a duplicate
+                required: true
+              - label: I have provided a minimal reproducible example
+                required: false
