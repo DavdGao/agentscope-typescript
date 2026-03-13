@@ -91,11 +91,21 @@ While the Bash tool can do similar things, it's better to use the built-in tools
                 const maxTimeout = 600000;
                 const effectiveTimeout = Math.min(timeout, maxTimeout);
 
+                // Determine the appropriate shell based on platform
+                let shell: string;
+                if (process.platform === 'win32') {
+                    // On Windows, use cmd.exe or PowerShell
+                    shell = process.env.COMSPEC || 'cmd.exe';
+                } else {
+                    // On Unix-like systems, use the user's shell or default to bash
+                    shell = process.env.SHELL || '/bin/bash';
+                }
+
                 const { stdout } = await execAsync(command, {
                     encoding: 'utf-8',
                     timeout: effectiveTimeout,
                     maxBuffer: 30000 * 1024,
-                    shell: process.env.SHELL || '/bin/bash',
+                    shell,
                 });
 
                 const maxOutputLength = 30000;
