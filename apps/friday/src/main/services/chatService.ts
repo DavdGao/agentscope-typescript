@@ -107,7 +107,7 @@ export function registerChatHandlers(ipcMain: IpcMain, webContents: WebContents)
             });
 
             // tool
-            const toolkit = await getToolkit(sessionId);
+            const toolkit = await getToolkit(sessionId, agentKey);
 
             // Build system prompt
             let sysPrompt: string;

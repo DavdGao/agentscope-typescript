@@ -60,9 +60,10 @@ export function getModel(modelConfig: ModelConfig) {
 /**
  * Builds a toolkit with all available tools and MCP clients for a session.
  * @param sessionId - The current session ID.
+ * @param agentKey - The unique key for the agent instance (used for scheduling tools).
  * @returns A configured Toolkit instance.
  */
-export async function getToolkit(sessionId: string) {
+export async function getToolkit(sessionId: string, agentKey: string) {
     const skills = skillGetAll().map(skill => skill.dirPath);
 
     const toolkit = new Toolkit({
@@ -74,7 +75,7 @@ export async function getToolkit(sessionId: string) {
             Read(),
             Glob(),
             Grep(),
-            ScheduleCreate(sessionId),
+            ScheduleCreate(sessionId, agentKey),
             ScheduleDelete(),
             ScheduleList(),
             ScheduleGet(),

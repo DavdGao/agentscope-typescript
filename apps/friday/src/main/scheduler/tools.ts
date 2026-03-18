@@ -15,9 +15,10 @@ import {
  * Use this tool to schedule recurring tasks that should execute automatically at specified times.
  * The task will be persisted and survive application restarts.
  * @param sessionId
+ * @param creator
  * @returns A Tool definition for creating scheduled tasks
  */
-export function ScheduleCreate(sessionId: string) {
+export function ScheduleCreate(sessionId: string, creator: string) {
     return {
         name: 'ScheduleCreate',
         description: `Create a scheduled task with a cron expression to run periodically.
@@ -109,6 +110,7 @@ IMPORTANT: Provide enough detail in the 'description' field to allow the task to
                     startAt,
                     endAt,
                     cronExpr,
+                    agentKey: creator,
                     sessionId,
                 });
                 return `Scheduled task created successfully: ${JSON.stringify(schedule, null, 2)}`;
