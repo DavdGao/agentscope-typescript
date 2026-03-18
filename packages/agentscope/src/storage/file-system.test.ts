@@ -13,11 +13,7 @@ describe('LocalFileStorage', () => {
         if (fs.existsSync(testDir)) {
             fs.rmSync(testDir, { recursive: true, force: true });
         }
-        storage = new LocalFileStorage({
-            rootDir: testDir,
-            sessionId: 'test-session',
-            userId: 'test-user',
-        });
+        storage = new LocalFileStorage({ pathSegments: [testDir, 'test-user', 'test-session'] });
     });
 
     afterEach(() => {
@@ -362,10 +358,8 @@ describe('LocalFileStorage', () => {
         it('should offload text messages to a date-based file', async () => {
             const offloadDir = path.join(testDir, 'offload');
             const storageWithOffload = new LocalFileStorage({
-                rootDir: testDir,
-                sessionId: 'test-session',
-                userId: 'test-user',
-                offloadRootDir: offloadDir,
+                pathSegments: [testDir, 'test-user', 'test-session'],
+                offloadPathSegments: [offloadDir, 'test-user', 'test-session'],
             });
 
             const msgs = [
@@ -397,10 +391,8 @@ describe('LocalFileStorage', () => {
         it('should append to existing offload file on same day', async () => {
             const offloadDir = path.join(testDir, 'offload');
             const storageWithOffload = new LocalFileStorage({
-                rootDir: testDir,
-                sessionId: 'test-session',
-                userId: 'test-user',
-                offloadRootDir: offloadDir,
+                pathSegments: [testDir, 'test-user', 'test-session'],
+                offloadPathSegments: [offloadDir, 'test-user', 'test-session'],
             });
 
             const msgs1 = [
@@ -438,10 +430,8 @@ describe('LocalFileStorage', () => {
         it('should handle data blocks with URL source', async () => {
             const offloadDir = path.join(testDir, 'offload');
             const storageWithOffload = new LocalFileStorage({
-                rootDir: testDir,
-                sessionId: 'test-session',
-                userId: 'test-user',
-                offloadRootDir: offloadDir,
+                pathSegments: [testDir, 'test-user', 'test-session'],
+                offloadPathSegments: [offloadDir, 'test-user', 'test-session'],
             });
 
             const msgs = [
@@ -476,10 +466,8 @@ describe('LocalFileStorage', () => {
         it('should handle data blocks with base64 source', async () => {
             const offloadDir = path.join(testDir, 'offload');
             const storageWithOffload = new LocalFileStorage({
-                rootDir: testDir,
-                sessionId: 'test-session',
-                userId: 'test-user',
-                offloadRootDir: offloadDir,
+                pathSegments: [testDir, 'test-user', 'test-session'],
+                offloadPathSegments: [offloadDir, 'test-user', 'test-session'],
             });
 
             // Create a simple base64 encoded text
@@ -528,10 +516,8 @@ describe('LocalFileStorage', () => {
         it('should handle tool_call blocks', async () => {
             const offloadDir = path.join(testDir, 'offload');
             const storageWithOffload = new LocalFileStorage({
-                rootDir: testDir,
-                sessionId: 'test-session',
-                userId: 'test-user',
-                offloadRootDir: offloadDir,
+                pathSegments: [testDir, 'test-user', 'test-session'],
+                offloadPathSegments: [offloadDir, 'test-user', 'test-session'],
             });
 
             const msgs = [
@@ -561,10 +547,8 @@ describe('LocalFileStorage', () => {
         it('should handle mixed content types in a single message', async () => {
             const offloadDir = path.join(testDir, 'offload');
             const storageWithOffload = new LocalFileStorage({
-                rootDir: testDir,
-                sessionId: 'test-session',
-                userId: 'test-user',
-                offloadRootDir: offloadDir,
+                pathSegments: [testDir, 'test-user', 'test-session'],
+                offloadPathSegments: [offloadDir, 'test-user', 'test-session'],
             });
 
             const msgs = [

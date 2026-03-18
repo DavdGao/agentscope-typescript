@@ -5,15 +5,16 @@ import type {
     ToolResultBlock,
 } from '@agentscope-ai/agentscope/message';
 import { formatNumber } from '@shared/utils/common';
-import { Circle } from 'lucide-react';
+import { ArrowDown, ArrowUp, Circle, Copy } from 'lucide-react';
 import * as mime from 'mime-types';
 import { ReactNode } from 'react';
 import ReactMarkdown from 'react-markdown';
-import rehypeRaw from 'rehype-raw';
 import remarkGfm from 'remark-gfm';
 
+import { ConfirmCard } from './ConfirmCard';
 import lineCornerSvg from '@/assets/images/line-corner.svg';
 import lineVerticalSvg from '@/assets/images/line-vertical.svg';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useTranslation } from '@/i18n/useI18n';
 
@@ -227,7 +228,7 @@ function ToolCallGroupList({
                                 className="w-3 h-full"
                             />
                         </div>
-                        <div className="truncate flex-1 min-w-0">
+                        <div className="truncate flex-1 min-w-0 text-sm">
                             {extractToolParam(item.call.input, paramKey)}
                         </div>
                     </div>
@@ -272,7 +273,7 @@ function ToolCallGroup({
                 calls={renderToolCalls}
                 paramKey="file_path"
                 label={
-                    <span>
+                    <span className="text-sm">
                         <strong className="truncate text-primary">Read </strong>
                         {renderToolCalls.length} file{renderToolCalls.length > 1 ? 's' : ''}
                     </span>
@@ -287,7 +288,7 @@ function ToolCallGroup({
                 paramKey="pattern"
                 inline
                 label={
-                    <strong className="truncate text-primary">
+                    <strong className="truncate text-primary text-sm">
                         {block.groupType === 'glob_group' ? 'Glob' : 'Grep'}
                     </strong>
                 }
@@ -341,7 +342,7 @@ function ToolCallGroup({
             }
 
             elements.push(
-                <div className="flex flex-col w-full max-w-full">
+                <div className="flex flex-col w-full max-w-full text-sm">
                     <div className="flex flex-row gap-x-2 w-full max-w-full items-center">
                         <ToolStateIcon states={[result?.state]} />
                         <span className="truncate">
@@ -372,40 +373,12 @@ function ToolCallGroup({
     if (firstNeedConfirm !== -1) {
         const { call } = block.calls[firstNeedConfirm];
         elements.push(
-            <div className="border border-border rounded-sm w-full p-4 space-y-4">
-                <div className="flex flex-col gap-y-2">
-                    <div>
-                        <strong>{call.name}</strong> tool
-                    </div>
-                    <div className="p-4 bg-white rounded-sm">{processToolInput(call.input)}</div>
-                    {t('chat.confirmToolCall')}
-                </div>
-                <div className="flex flex-row gap-x-2">
-                    <Button
-                        size="sm"
-                        className="w-16"
-                        onClick={() => {
-                            if (onUserConfirm) {
-                                onUserConfirm(call, true);
-                            }
-                        }}
-                    >
-                        {t('common.yes')}
-                    </Button>
-                    <Button
-                        className="w-16"
-                        variant="outline"
-                        size={'sm'}
-                        onClick={() => {
-                            if (onUserConfirm) {
-                                onUserConfirm(call, false);
-                            }
-                        }}
-                    >
-                        {t('common.no')}
-                    </Button>
-                </div>
-            </div>
+            <ConfirmCard
+                toolCall={call}
+                onUserConfirm={confirm => {
+                    if (onUserConfirm) onUserConfirm(call, confirm);
+                }}
+            />
         );
     }
 
@@ -434,8 +407,46 @@ function renderBlock(
             return <ToolCallGroup block={block} index={index} onUserConfirm={onUserConfirm} />;
         case 'text':
             return (
-                <div className="prose">
-                    <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
+                <div className="prose text-sm w-full min-w-full">
+                    <ReactMarkdown
+                        remarkPlugins={[remarkGfm]}
+                        // rehypePlugins={[rehypeRaw]}
+                        components={{
+                            code: ({ className, children, ...props }) => {
+                                const isInline = !String(className ?? '').startsWith('language-');
+                                if (isInline) {
+                                    return (
+                                        <code className={className} {...props}>
+                                            {children}
+                                        </code>
+                                    );
+                                }
+                                return (
+                                    <div className="relative w-full">
+                                        <Button
+                                            size="icon-xs"
+                                            variant="ghost"
+                                            className="absolute top-0 right-0 z-10"
+                                            onClick={async e => {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                await navigator.clipboard.writeText(
+                                                    String(children)
+                                                );
+                                            }}
+                                        >
+                                            <Copy />
+                                        </Button>
+                                        <div className="overflow-x-auto max-w-full w-full">
+                                            <code className={className} {...props}>
+                                                {children}
+                                            </code>
+                                        </div>
+                                    </div>
+                                );
+                            },
+                        }}
+                    >
                         {block.text}
                     </ReactMarkdown>
                 </div>
@@ -507,21 +518,18 @@ export function MessageBubble({ message, onUserConfirm }: MessageBubbleProps) {
             className={`flex flex-col w-full max-w-full ${isUser ? 'items-end' : 'items-start'} mb-4`}
         >
             <div
-                className={`p-4 rounded-xl text-sm space-y-2 ${isUser ? 'w-fit max-w-[90%]' : 'w-[90%] max-w-[90%] bg-muted'}`}
+                className={`p-4 rounded-xl space-y-2 max-w-full ${isUser ? 'w-fit bg-secondary' : 'w-full min-w-full'}`}
             >
                 {renderContent()}
             </div>
             {isUser ? null : (
-                <div className="flex flex-row text-sm text-muted-foreground gap-x-4">
-                    <div className="flex flex-row gap-x-2">
-                        <span>Input Tokens:</span>
-                        <div>{formatNumber(message.usage?.inputTokens || 0)}</div>
-                    </div>
-
-                    <div className="flex flex-row gap-x-2">
-                        <span>Output Tokens:</span>
-                        <div>{formatNumber(message.usage?.outputTokens || 0)}</div>
-                    </div>
+                <div className="flex flex-row text-muted-foreground gap-x-4 px-2">
+                    <Badge variant="secondary">
+                        <ArrowUp data-icon="inline-start" />
+                        {formatNumber(message.usage?.inputTokens || 0)}
+                        <ArrowDown data-icon="inline-start" className="ml-1" />
+                        {formatNumber(message.usage?.outputTokens || 0)}
+                    </Badge>
                 </div>
             )}
         </div>

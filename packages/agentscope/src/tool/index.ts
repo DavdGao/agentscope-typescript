@@ -7,3 +7,4 @@ export { Write } from './write';
 export { Edit } from './edit';
 export { Glob } from './glob';
 export { Grep } from './grep';
+export { TaskCreate, TaskUpdate, TaskGet, TaskList } from './task';

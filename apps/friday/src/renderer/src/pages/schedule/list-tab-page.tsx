@@ -1,59 +1,100 @@
-import { addDays, format } from 'date-fns';
-import { CalendarIcon, Clock } from 'lucide-react';
+import type { ScheduleWithStatus } from '@shared/types/schedule';
+import { CronExpressionParser } from 'cron-parser';
+import { format } from 'date-fns';
+import { CalendarIcon } from 'lucide-react';
 import * as React from 'react';
 import { type DateRange } from 'react-day-picker';
 
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Field } from '@/components/ui/field';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { useSchedule } from '@/contexts/ScheduleContext';
 import { useTranslation } from '@/i18n/useI18n';
-import { ScheduleEvent } from '@/pages/schedule/event';
+import { EmptyState } from '@/pages/schedule/empty-state';
+import { ScheduleCard } from '@/pages/schedule/schedule-card';
+import { ScheduleDetailDrawer } from '@/pages/schedule/schedule-detail-drawer';
 
-interface Props {
-    events: ScheduleEvent[];
-    onEventClick: (event: ScheduleEvent) => void;
+/**
+ * Check if a schedule has any occurrences within a date range
+ *
+ * @param schedule - Schedule to check
+ * @param rangeStart - Start of date range
+ * @param rangeEnd - End of date range
+ * @returns True if schedule has occurrences in range
+ */
+function scheduleHasOccurrencesInRange(
+    schedule: ScheduleWithStatus,
+    rangeStart: Date,
+    rangeEnd: Date
+): boolean {
+    try {
+        const interval = CronExpressionParser.parse(schedule.cronExpr, {
+            currentDate: rangeStart,
+            endDate: rangeEnd,
+        });
+
+        // Check if there's at least one occurrence
+        while (interval.hasNext()) {
+            const date = interval.next().toDate();
+            const ts = date.getTime();
+
+            // Skip if before schedule start
+            if (ts < schedule.startAt) continue;
+
+            // Stop if after schedule end
+            if (schedule.endAt && ts > schedule.endAt) break;
+
+            // Found an occurrence in range
+            return true;
+        }
+
+        return false;
+    } catch {
+        // Invalid cron expression, include by default
+        return true;
+    }
 }
 
 /**
- * The list tab page component that displays events in a list view grouped by date.
+ * The list tab page component that displays schedules in a list view
  *
- * @param root0 - The component props.
- * @param root0.events - Array of schedule events to display.
- * @param root0.onEventClick - Callback when an event is clicked.
- * @returns A ListTabPage component.
+ * @returns A ListTabPage component
  */
-export function ListTabPage({ events, onEventClick }: Props) {
+export function ListTabPage() {
     const { t } = useTranslation();
-    // Group events by date for list view
-    const groupedEvents = React.useMemo(() => {
-        const grouped = new Map<string, ScheduleEvent[]>();
-        events.forEach(event => {
-            if (!grouped.has(event.date)) {
-                grouped.set(event.date, []);
-            }
-            grouped.get(event.date)!.push(event);
-        });
-        // Sort by date
-        return Array.from(grouped.entries())
-            .sort(([dateA], [dateB]) => dateA.localeCompare(dateB))
-            .map(([date, events]) => ({
-                date,
-                events: events.sort((a, b) => a.time.localeCompare(b.time)),
-            }));
-    }, [events]);
+    const { schedules, loading } = useSchedule();
+    const [selectedSchedule, setSelectedSchedule] = React.useState<ScheduleWithStatus | null>(null);
+    const [dateRange, setDateRange] = React.useState<DateRange | undefined>(undefined);
 
-    const [date, setDate] = React.useState<DateRange | undefined>({
-        from: new Date(new Date().getFullYear(), 0, 20),
-        to: addDays(new Date(new Date().getFullYear(), 0, 20), 20),
-    });
+    // Filter schedules by date range if set
+    const filteredSchedules = React.useMemo(() => {
+        if (!dateRange?.from) {
+            // No date range set, show all schedules
+            return schedules;
+        }
+
+        const rangeStart = dateRange.from;
+        const rangeEnd = dateRange.to || dateRange.from;
+
+        // Filter schedules that have events within the date range
+        return schedules.filter(schedule =>
+            scheduleHasOccurrencesInRange(schedule, rangeStart, rangeEnd)
+        );
+    }, [schedules, dateRange]);
+
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center h-full">
+                <div className="text-muted-foreground">{t('common.loading')}</div>
+            </div>
+        );
+    }
 
     return (
         <div className="flex flex-col size-full">
             <div className="flex flex-row w-full p-4 justify-between">
                 <Field className="flex flex-row w-fit">
-                    {/*<Label>Range: </Label>*/}
                     <Popover>
                         <PopoverTrigger asChild>
                             <Button
@@ -63,26 +104,28 @@ export function ListTabPage({ events, onEventClick }: Props) {
                                 size="sm"
                             >
                                 <CalendarIcon />
-                                {date?.from ? (
-                                    date.to ? (
+                                {dateRange?.from ? (
+                                    dateRange.to ? (
                                         <>
-                                            {format(date.from, 'LLL dd, y')} -{' '}
-                                            {format(date.to, 'LLL dd, y')}
+                                            {format(dateRange.from, 'LLL dd, y')} -{' '}
+                                            {format(dateRange.to, 'LLL dd, y')}
                                         </>
                                     ) : (
-                                        format(date.from, 'LLL dd, y')
+                                        format(dateRange.from, 'LLL dd, y')
                                     )
                                 ) : (
-                                    <span>{t('schedule.pickDate')}</span>
+                                    <span className="text-muted-foreground">
+                                        {t('schedule.pickDate')}
+                                    </span>
                                 )}
                             </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-auto p-0" align="start">
                             <Calendar
                                 mode="range"
-                                defaultMonth={date?.from}
-                                selected={date}
-                                onSelect={setDate}
+                                defaultMonth={dateRange?.from}
+                                selected={dateRange}
+                                onSelect={setDateRange}
                                 numberOfMonths={2}
                             />
                         </PopoverContent>
@@ -90,70 +133,26 @@ export function ListTabPage({ events, onEventClick }: Props) {
                 </Field>
             </div>
             <div className="size-full overflow-y-auto p-4">
-                {groupedEvents.length === 0 ? (
-                    <div className="text-center text-muted-foreground py-8">
-                        {t('schedule.noEventsScheduled')}
-                    </div>
+                {filteredSchedules.length === 0 ? (
+                    <EmptyState />
                 ) : (
-                    <div className="space-y-6">
-                        {groupedEvents.map(({ date, events }) => {
-                            const dateObj = new Date(date + 'T00:00:00');
-                            const isToday =
-                                dateObj.getDate() === new Date().getDate() &&
-                                dateObj.getMonth() === new Date().getMonth() &&
-                                dateObj.getFullYear() === new Date().getFullYear();
-
-                            return (
-                                <div key={date} className="space-y-2">
-                                    {/* Date header */}
-                                    <div
-                                        className={`text-sm font-semibold ${isToday ? 'text-primary' : 'text-foreground'}`}
-                                    >
-                                        {dateObj.toLocaleDateString('en-US', {
-                                            weekday: 'short',
-                                            year: 'numeric',
-                                            month: 'short',
-                                            day: 'numeric',
-                                        })}
-                                        {isToday && ` (${t('schedule.today')})`}
-                                    </div>
-                                    {/* Events list */}
-                                    <div className="space-y-2 pl-4">
-                                        {events.map(event => (
-                                            <Card
-                                                key={event.id}
-                                                className="cursor-pointer hover:shadow-md transition-shadow"
-                                                onClick={() => onEventClick(event)}
-                                            >
-                                                <CardHeader>
-                                                    <div className="flex items-start justify-between">
-                                                        <div className="flex-1">
-                                                            <CardTitle className="text-base">
-                                                                {event.title}
-                                                            </CardTitle>
-                                                            <CardDescription className="flex items-center gap-1 mt-1">
-                                                                <Clock className="h-3 w-3" />
-                                                                {event.time}
-                                                            </CardDescription>
-                                                        </div>
-                                                    </div>
-                                                </CardHeader>
-                                                {event.content && (
-                                                    <CardContent className="pt-0">
-                                                        <p className="text-sm text-muted-foreground line-clamp-2">
-                                                            {event.content}
-                                                        </p>
-                                                    </CardContent>
-                                                )}
-                                            </Card>
-                                        ))}
-                                    </div>
-                                </div>
-                            );
-                        })}
+                    <div className="space-y-3">
+                        {filteredSchedules.map(schedule => (
+                            <ScheduleCard
+                                key={schedule.id}
+                                schedule={schedule}
+                                onClick={() => setSelectedSchedule(schedule)}
+                            />
+                        ))}
                     </div>
                 )}
             </div>
+
+            <ScheduleDetailDrawer
+                schedule={selectedSchedule}
+                open={!!selectedSchedule}
+                onOpenChange={open => !open && setSelectedSchedule(null)}
+            />
         </div>
     );
 }

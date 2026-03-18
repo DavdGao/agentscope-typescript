@@ -194,6 +194,7 @@ export const TextInput = forwardRef<TextInputRef, TextInputProps>(
                                 lineHeight: '1.5em',
                                 overflowY: 'auto',
                             }}
+                            autoFocus={true}
                         />
 
                         {/* Autocomplete suggestion - using absolute positioning overlay */}

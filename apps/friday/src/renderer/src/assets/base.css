@@ -1,4 +1,5 @@
 @import 'tailwindcss';
+
 @plugin '@tailwindcss/typography';
 
 @custom-variant dark (&:is(.dark *));
@@ -37,9 +38,6 @@
     --sidebar-accent-foreground: oklch(0.21 0.006 285.885);
     --sidebar-border: oklch(0.92 0.004 286.32);
     --sidebar-ring: oklch(0.705 0.015 286.067);
-
-    --default-border-color: oklch(0.705 0.015 286.067);
-    --default-border-width: 0.5px;
 }
 
 .dark {
@@ -87,48 +85,18 @@ body,
 body {
     line-height: 1.6;
     font-family:
-        Inter,
-        -apple-system,
-        BlinkMacSystemFont,
-        'Segoe UI',
-        Roboto,
-        Oxygen,
-        Ubuntu,
-        Cantarell,
-        'Fira Sans',
-        'Droid Sans',
-        'Helvetica Neue',
-        sans-serif;
+        ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New',
+        monospace;
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
 }
 
 @layer utilities {
-    .border {
-        border-width: var(--default-border-width);
-        border-color: var(--default-border-color);
-    }
-    .border-b {
-        border-bottom-width: var(--default-border-width);
-        border-color: var(--default-border-color);
-    }
-    .border-l {
-        border-left-width: var(--default-border-width);
-        border-color: var(--default-border-color);
-    }
-    .border-r {
-        border-right-width: var(--default-border-width);
-        border-color: var(--default-border-color);
-    }
-    .border-t {
-        border-top-width: var(--default-border-width);
-        border-color: var(--default-border-color);
-    }
-
     .no-scrollbar::-webkit-scrollbar {
         display: none; /* Chrome / Safari */
     }
+
     .no-scrollbar {
         -ms-overflow-style: none; /* IE / Edge */
         scrollbar-width: none; /* Firefox */
@@ -147,6 +115,13 @@ body {
 
     .animate-blink {
         animation: blink 1s step-end infinite;
+    }
+}
+
+@layer base {
+    * {
+        border-color: var(--border);
+        outline-color: var(--color-ring);
     }
 }
 

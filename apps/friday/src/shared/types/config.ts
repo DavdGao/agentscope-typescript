@@ -13,15 +13,11 @@ export type ModelProvider = 'dashscope' | 'openai' | 'ollama' | 'deepseek';
  * @property provider - The AI provider (dashscope, openai, ollama, deepseek)
  * @property modelName - The specific model name (e.g., 'qwen3-max', 'gpt-4')
  * @property apiKey - API key for authentication
- * @property clientKwargs - Optional client initialization parameters
- * @property generateKwargs - Optional generation parameters (temperature, max_tokens, etc.)
  */
 export interface ModelConfig {
     provider: ModelProvider;
     modelName: string;
     apiKey: string;
-    clientKwargs?: Record<string, string | number | boolean>;
-    generateKwargs?: Record<string, string | number | boolean>;
 }
 
 // ============================================

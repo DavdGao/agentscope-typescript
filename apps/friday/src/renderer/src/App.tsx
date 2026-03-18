@@ -9,6 +9,8 @@ import { OllamaSetup } from '@/components/onboarding/OllamaSetup';
 import { OnboardingWizard } from '@/components/onboarding/OnboardingWizard';
 import { TourTooltip } from '@/components/tour/TourTooltip';
 import { Toaster } from '@/components/ui/sonner';
+import { LayoutProvider } from '@/contexts/LayoutContext';
+import { ScheduleProvider } from '@/contexts/ScheduleContext';
 import { useConfig } from '@/hooks/use-config';
 import { useTour } from '@/hooks/use-tour';
 import { AgentPage } from '@/pages/agent';
@@ -139,10 +141,14 @@ function App(): React.JSX.Element {
     // Show normal application
     return (
         <TooltipProvider>
-            <HashRouter>
-                <AppRoutes />
-            </HashRouter>
-            <Toaster />
+            <LayoutProvider>
+                <ScheduleProvider>
+                    <HashRouter>
+                        <AppRoutes />
+                    </HashRouter>
+                    <Toaster />
+                </ScheduleProvider>
+            </LayoutProvider>
         </TooltipProvider>
     );
 }

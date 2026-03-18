@@ -30,5 +30,12 @@ export default defineConfig(
             'react/prop-types': 'off',
         },
     },
+    {
+        files: ['**/components/ui/**'],
+        rules: {
+            'jsdoc/require-description': 'off',
+            'jsdoc/require-returns': 'off',
+        },
+    },
     eslintConfigPrettier
 );

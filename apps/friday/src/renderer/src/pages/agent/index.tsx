@@ -154,7 +154,7 @@ export function AgentPage() {
                                         <SelectItem value={key} key={key}>
                                             <ProviderLogo
                                                 provider={config.provider}
-                                                className="size-6"
+                                                className="size-4"
                                             />
                                             {key}
                                         </SelectItem>
@@ -164,7 +164,7 @@ export function AgentPage() {
                         </Field>
                         <Button size="sm">
                             <Plus />
-                            Add Model
+                            {t('agent.addModel')}
                         </Button>
                     </FieldGroup>
                 </FieldSet>

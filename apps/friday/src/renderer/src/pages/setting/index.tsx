@@ -1,5 +1,6 @@
 import type { ModelConfig } from '@shared/types/config';
 import { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 
 import { DataSettings } from './DataSettings';
 import { FeatureSettings } from './FeatureSettings';
@@ -58,7 +59,7 @@ export function SettingPage() {
         {
             key: 'features',
             group: t('setting.features'),
-            items: [t('chat.chat'), t('editor.editor')],
+            items: [t('common.chat'), t('common.editor')],
         },
         {
             key: 'data',
@@ -88,14 +89,54 @@ export function SettingPage() {
         setActiveKey(key);
     };
 
-    const handleModelSave = async () => {
-        try {
-            await updateConfig({
-                models: modelConfigs,
-            });
-        } catch (error) {
-            console.error('Failed to save model configs:', error);
+    const handleModelConfigCreate = async (modelKey: string, newModelConfig: ModelConfig) => {
+        const modelConfigs = config ? config.models : {};
+
+        if (modelConfigs[modelKey]) {
+            throw new Error(
+                `Model key "${modelKey}" already exists. Please choose a different name.`
+            );
         }
+
+        await updateConfig({
+            models: {
+                ...modelConfigs,
+                [modelKey]: newModelConfig,
+            },
+        });
+
+        toast.success(t('setting.modelConfigCreateSuccess'), { position: 'top-center' });
+    };
+
+    const handleModelConfigChange = async (modelKey: string, updatedModelConfig: ModelConfig) => {
+        const modelConfigs = config ? config.models : {};
+
+        if (!modelConfigs[modelKey]) {
+            throw new Error(`Model key "${modelKey}" does not exist.`);
+        }
+
+        await updateConfig({
+            models: {
+                ...modelConfigs,
+                [modelKey]: updatedModelConfig,
+            },
+        });
+
+        toast.success(t('setting.modelConfigUpdateSuccess'), { position: 'top-center' });
+    };
+
+    const handleModelConfigDelete = async (modelKey: string) => {
+        const modelConfigs = config ? config.models : {};
+
+        if (!modelConfigs[modelKey]) {
+            throw new Error(`Model key "${modelKey}" does not exist.`);
+        }
+
+        await updateConfig({
+            models: Object.fromEntries(
+                Object.entries(modelConfigs).filter(([key]) => key !== modelKey)
+            ),
+        });
     };
 
     // Render the active section
@@ -114,8 +155,9 @@ export function SettingPage() {
                 return (
                     <ModelSettings
                         modelConfigs={modelConfigs}
-                        onModelConfigsChange={setModelConfigs}
-                        onSave={handleModelSave}
+                        onChange={handleModelConfigChange}
+                        onCreate={handleModelConfigCreate}
+                        onDelete={handleModelConfigDelete}
                     />
                 );
             case 'features':

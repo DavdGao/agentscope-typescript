@@ -4,7 +4,7 @@ import { electronApp, optimizer, is } from '@electron-toolkit/utils';
 import { app, shell, BrowserWindow, ipcMain, Tray, Menu, nativeImage, dialog } from 'electron';
 
 import { registerConfigHandlers } from './config';
-import { initScheduler, shutdownScheduler } from './scheduler';
+import { shutdownScheduler } from './scheduler';
 import { registerChatHandlers } from './services/chatService';
 import { registerDocumentHandlers } from './services/documentService';
 import { registerMcpHandlers } from './services/mcpHandlers';
@@ -142,17 +142,18 @@ app.whenReady().then(async () => {
     // Ensure storage directories exist
     ensureDirectories();
 
-    // Register IPC handlers for each module
+    // Register IPC handlers for each module (except those needing webContents)
     registerConfigHandlers(ipcMain);
-    registerScheduleHandlers(ipcMain);
     registerMcpHandlers(ipcMain);
     registerSkillHandlers(ipcMain);
     registerDocumentHandlers(ipcMain);
 
-    await initScheduler();
-
     const mainWindow = createWindow();
+
+    // Register handlers that need webContents
     registerChatHandlers(ipcMain, mainWindow.webContents);
+    await registerScheduleHandlers(ipcMain, mainWindow.webContents);
+
     createTray(mainWindow);
 
     app.on('activate', function () {

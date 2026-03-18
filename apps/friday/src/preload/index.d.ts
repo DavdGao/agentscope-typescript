@@ -10,7 +10,13 @@ import type { GetItemsQuery, GetItemsResult } from '@shared/types/common';
 import type { Config } from '@shared/types/config';
 import type { Document } from '@shared/types/document';
 import type { MCPServerConfig, MCPServerState } from '@shared/types/mcp';
-import type { Schedule } from '@shared/types/schedule';
+import type {
+    Schedule,
+    ScheduleWithStatus,
+    ScheduleExecution,
+    ExecutionStartedEvent,
+    ExecutionFinishedEvent,
+} from '@shared/types/schedule';
 import type {
     SkillConfig,
     WatchDir,
@@ -55,10 +61,22 @@ declare global {
                 subscribe: (sessionId: string, callback: (event: AgentEvent) => void) => () => void;
             };
             schedule: {
-                list: () => Promise<Schedule[]>;
+                list: () => Promise<ScheduleWithStatus[]>;
                 create: (data: Omit<Schedule, 'id'>) => Promise<Schedule>;
                 update: (id: string, data: Partial<Schedule>) => Promise<Schedule>;
                 delete: (id: string) => Promise<void>;
+                getExecutions: (scheduleId: string) => Promise<ScheduleExecution[]>;
+                subscribeExecutionStarted: (
+                    callback: (event: ExecutionStartedEvent) => void
+                ) => () => void;
+                subscribeExecutionFinished: (
+                    callback: (event: ExecutionFinishedEvent) => void
+                ) => () => void;
+                getExecutionMessages: (scheduleId: string, executionId: string) => Promise<Msg[]>;
+                subscribeAgentEvents: (
+                    scheduleId: string,
+                    callback: (event: AgentEvent) => void
+                ) => () => void;
             };
             mcp: {
                 getAll: () => Promise<MCPServerState[]>;

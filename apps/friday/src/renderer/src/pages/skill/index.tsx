@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 
 import { EmptySearch, EmptySkill } from './empty';
+import { DeleteDialog } from '@/components/dialog/DeleteDialog';
 import { Button } from '@/components/ui/button';
 import {
     Card,
@@ -32,6 +33,7 @@ export function SkillPage() {
     const { t } = useTranslation();
     const [searchQuery, setSearchQuery] = useState('');
     const { skills, loading, setActive, remove, importSkill, addWatchDir } = useSkills();
+    const [toDeleteSkill, setToDeleteSkill] = useState<string | null>(null);
 
     const handleImport = async () => {
         const result = await importSkill();
@@ -131,6 +133,24 @@ export function SkillPage() {
                 </div>
             </div>
 
+            <DeleteDialog
+                open={toDeleteSkill !== null}
+                setOpen={open => {
+                    if (!open) setToDeleteSkill(null);
+                }}
+                title={t('skill.deleteSkill.title')}
+                description={t('skill.deleteSkill.description', {
+                    skillName: toDeleteSkill ?? '',
+                })}
+                onConfirm={async () => {
+                    if (toDeleteSkill) {
+                        await remove(toDeleteSkill);
+                        setToDeleteSkill(null);
+                    }
+                }}
+                successToast={t('skill.deleteSkill.successToast')}
+            />
+
             {filteredSkills.length === 0 ? (
                 searchQuery ? (
                     <div className="flex-1 flex items-center justify-center">
@@ -172,7 +192,7 @@ export function SkillPage() {
                                             variant="secondary"
                                             onClick={e => {
                                                 e.stopPropagation();
-                                                remove(skill.name);
+                                                setToDeleteSkill(skill.name);
                                             }}
                                             className="opacity-0 group-hover:opacity-100 transition-opacity"
                                         >

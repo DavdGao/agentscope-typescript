@@ -1,3 +1,4 @@
+import { useStatusbar } from '@/contexts/LayoutContext';
 import { useTranslation } from '@/i18n/useI18n';
 
 /**
@@ -7,12 +8,17 @@ import { useTranslation } from '@/i18n/useI18n';
  */
 export function AppStatusbar() {
     const { t } = useTranslation();
+    const { statusbarContent } = useStatusbar();
 
     // Placeholder: actual status should be obtained from state management
     const isRunning = false;
 
     return (
-        <footer className="flex items-center justify-end px-4 h-9 border-t bg-background text-xs text-muted-foreground">
+        <footer className="flex items-center justify-between px-4 h-9 border-t bg-background text-xs text-muted-foreground">
+            {/* 左侧：自定义内容 */}
+            <div className="flex items-center gap-4">{statusbarContent}</div>
+
+            {/* 右侧：默认的token和status信息 */}
             <div className="flex items-center gap-4">
                 <span className="flex items-center gap-1.5">
                     <span className="font-medium">Token:</span>

@@ -15,6 +15,7 @@ import {
 import { useState, useCallback, useEffect } from 'react';
 
 import { ChatContent } from '@/components/chat/ChatContent';
+import { DeleteDialog } from '@/components/dialog/DeleteDialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
@@ -49,6 +50,7 @@ import {
     SidebarGroupLabel,
     SidebarHeader,
 } from '@/components/ui/sidebar';
+import { useTitlebar } from '@/contexts/LayoutContext';
 import { useChat } from '@/hooks/use-chat';
 import { useConfig } from '@/hooks/use-config';
 import { useMessages } from '@/hooks/use-messages';
@@ -68,6 +70,7 @@ export function ChatPage() {
     const [renameValue, setRenameValue] = useState('');
     const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
     const { config } = useConfig();
+    const { setTitlebarContent } = useTitlebar();
 
     const [selectedAgentKey, setSelectedAgentKey] = useState<string>('friday');
 
@@ -92,6 +95,27 @@ export function ChatPage() {
     }, [allSessions]);
 
     const { messages, sending, sendMessage, sendUserConfirm } = useMessages(currentSessionId);
+
+    // Set titlebar content with sidebar toggle button
+    useEffect(() => {
+        setTitlebarContent(
+            <Button
+                variant="ghost"
+                size="icon-sm"
+                onClick={() => setSidebarOpen(prev => !prev)}
+                style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
+            >
+                {sidebarOpen ? (
+                    <PanelLeftClose className="size-4" />
+                ) : (
+                    <PanelLeft className="size-4" />
+                )}
+            </Button>
+        );
+
+        // Clean up titlebar content on unmount
+        return () => setTitlebarContent(null);
+    }, [sidebarOpen, setTitlebarContent]);
 
     useEffect(() => {}, [allSessions]);
 
@@ -267,17 +291,6 @@ export function ChatPage() {
             )}
             <div className="flex flex-col items-start h-full flex-1">
                 <div className="flex h-fit pt-4 pl-2 w-full">
-                    <Button
-                        variant="ghost"
-                        size="icon-sm"
-                        onClick={() => setSidebarOpen(!sidebarOpen)}
-                    >
-                        {sidebarOpen ? (
-                            <PanelLeftClose className="h-4 w-4" />
-                        ) : (
-                            <PanelLeft className="h-4 w-4" />
-                        )}
-                    </Button>
                     <Select value={selectedAgentKey} onValueChange={setSelectedAgentKey}>
                         <SelectTrigger size="sm" className="border-none shadow-none">
                             <SelectValue placeholder="Pick agent">
@@ -321,6 +334,7 @@ export function ChatPage() {
                 </div>
                 <div className="flex flex-1 w-full justify-center overflow-x-auto">
                     <ChatContent
+                        className="max-w-3xl"
                         msgs={messages}
                         sending={sending}
                         onSend={handleSendMessage}
@@ -334,8 +348,8 @@ export function ChatPage() {
             <Dialog open={renameDialogOpen} onOpenChange={setRenameDialogOpen}>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>{t('common.rename')}</DialogTitle>
-                        <DialogDescription>{t('chat.renameDescription')}</DialogDescription>
+                        <DialogTitle>{t('chat.renameSession.title')}</DialogTitle>
+                        <DialogDescription>{t('chat.renameSession.description')}</DialogDescription>
                     </DialogHeader>
                     <Input
                         value={renameValue}
@@ -361,28 +375,16 @@ export function ChatPage() {
             </Dialog>
 
             {/* Delete Dialog */}
-            <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>{t('common.delete')}</DialogTitle>
-                        <DialogDescription>
-                            {t('chat.deleteSessionConfirm', {
-                                name:
-                                    allSessions.find(s => s.id === selectedSessionId)?.name ||
-                                    'Unknown',
-                            })}
-                        </DialogDescription>
-                    </DialogHeader>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
-                            {t('common.cancel')}
-                        </Button>
-                        <Button variant="destructive" onClick={handleDeleteConfirm} autoFocus>
-                            {t('common.delete')}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+            <DeleteDialog
+                open={deleteDialogOpen}
+                setOpen={setDeleteDialogOpen}
+                title={t('chat.deleteSession.title')}
+                description={t('chat.deleteSession.description', {
+                    name: allSessions.find(s => s.id === selectedSessionId)?.name || 'Unknown',
+                })}
+                onConfirm={handleDeleteConfirm}
+                successToast={t('chat.deleteSession.successToast')}
+            />
         </div>
     );
 }

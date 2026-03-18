@@ -23,12 +23,13 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { useSchedule } from '@/contexts/ScheduleContext';
+import { useConfig } from '@/hooks/use-config';
 import { useTranslation } from '@/i18n/useI18n';
 
 interface Props {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    onCreated: () => void;
 }
 
 type FreqType = 'once' | 'daily' | 'weekly' | 'monthly';
@@ -133,14 +134,18 @@ function DatePickerButton({
  * @param root0 - The component props.
  * @param root0.open - Whether the dialog is open.
  * @param root0.onOpenChange - Callback when the dialog open state changes.
- * @param root0.onCreated - Callback when a schedule is successfully created.
  * @returns A CreateScheduleDialog component.
  */
-export function CreateScheduleDialog({ open, onOpenChange, onCreated }: Props) {
+export function CreateScheduleDialog({ open, onOpenChange }: Props) {
     const { t } = useTranslation();
+    const { createSchedule } = useSchedule();
+    const { config } = useConfig();
     const [form, setForm] = React.useState(getDefaultForm);
     const [loading, setLoading] = React.useState(false);
     const [error, setError] = React.useState('');
+
+    // Get the first agent key from config as default
+    const defaultAgentKey = config ? Object.keys(config.agents)[0] : undefined;
 
     React.useEffect(() => {
         if (open) {
@@ -182,15 +187,15 @@ export function CreateScheduleDialog({ open, onOpenChange, onCreated }: Props) {
                   })()
                 : undefined;
 
-            await window.api.schedule.create({
+            await createSchedule({
                 name: form.name.trim(),
                 enabled: true,
                 description: form.description.trim(),
                 cronExpr,
                 startAt,
                 endAt,
+                agentKey: defaultAgentKey ?? 'friday',
             });
-            onCreated();
             onOpenChange(false);
         } catch (e) {
             setError(String(e));

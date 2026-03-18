@@ -1,5 +1,6 @@
-import type { Schedule } from '@shared/types/schedule';
-import type { IpcMain } from 'electron';
+import type { Msg } from '@agentscope-ai/agentscope/message';
+import type { Schedule, ScheduleWithStatus, ScheduleExecution } from '@shared/types/schedule';
+import type { IpcMain, WebContents } from 'electron';
 
 import {
     createSchedule,
@@ -7,14 +8,24 @@ import {
     getSchedule,
     listSchedules,
     updateSchedule,
+    getExecutions,
+    getExecutionMessages,
+    initScheduler,
 } from '../scheduler';
 
 /**
  * Register IPC handlers for schedule-related operations
  *
  * @param ipcMain - The Electron IPC main instance
+ * @param webContents - The web contents for sending events
  */
-export function registerScheduleHandlers(ipcMain: IpcMain): void {
+export async function registerScheduleHandlers(
+    ipcMain: IpcMain,
+    webContents: WebContents
+): Promise<void> {
+    // Initialize scheduler with webContents
+    await initScheduler(webContents);
+
     const service = new ScheduleService();
 
     ipcMain.handle('schedule:create', (_event, params: Omit<Schedule, 'id'>) => {
@@ -37,6 +48,17 @@ export function registerScheduleHandlers(ipcMain: IpcMain): void {
         'schedule:update',
         (_event, id: string, patch: Partial<Omit<Schedule, 'id'>>) => {
             return service.update(id, patch);
+        }
+    );
+
+    ipcMain.handle('schedule:getExecutions', (_event, scheduleId: string) => {
+        return service.getExecutions(scheduleId);
+    });
+
+    ipcMain.handle(
+        'schedule:getExecutionMessages',
+        (_event, scheduleId: string, executionId: string) => {
+            return service.getExecutionMessages(scheduleId, executionId);
         }
     );
 }
@@ -76,11 +98,11 @@ export class ScheduleService {
     }
 
     /**
-     * List all schedules
+     * List all schedules with runtime status
      *
-     * @returns Array of all schedules
+     * @returns Array of all schedules with running execution info
      */
-    list(): Schedule[] {
+    list(): ScheduleWithStatus[] {
         return listSchedules();
     }
 
@@ -93,5 +115,25 @@ export class ScheduleService {
      */
     update(id: string, patch: Partial<Omit<Schedule, 'id'>>): Schedule | null {
         return updateSchedule(id, patch);
+    }
+
+    /**
+     * Get all executions for a schedule
+     *
+     * @param scheduleId - The schedule ID
+     * @returns Array of all executions
+     */
+    getExecutions(scheduleId: string): ScheduleExecution[] {
+        return getExecutions(scheduleId);
+    }
+
+    /**
+     * Retrieves all messages for a specific schedule execution.
+     * @param scheduleId - The schedule ID.
+     * @param executionId - The execution ID.
+     * @returns Array of messages for the execution.
+     */
+    getExecutionMessages(scheduleId: string, executionId: string): Msg[] {
+        return getExecutionMessages(scheduleId, executionId);
     }
 }

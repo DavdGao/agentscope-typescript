@@ -61,7 +61,7 @@ export const AppSidebar = () => {
                             <SidebarMenuItem key={'chat'}>
                                 <SidebarMenuButton
                                     tooltip={{
-                                        children: t('chat.chat'),
+                                        children: t('common.chat'),
                                         hidden: false,
                                     }}
                                     isActive={location.pathname === '/'}
@@ -91,7 +91,7 @@ export const AppSidebar = () => {
                             <SidebarMenuItem key={'editor'}>
                                 <SidebarMenuButton
                                     tooltip={{
-                                        children: t('editor.editor'),
+                                        children: t('common.editor'),
                                         hidden: false,
                                     }}
                                     isActive={location.pathname === '/editor'}

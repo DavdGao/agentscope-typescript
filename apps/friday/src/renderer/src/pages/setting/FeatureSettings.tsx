@@ -15,7 +15,7 @@ export function FeatureSettings() {
 
             {/* Chat Subsection */}
             <FieldSet>
-                <div className="font-semibold text-lg">{t('chat.chat')}</div>
+                <div className="font-semibold text-lg">{t('common.chat')}</div>
                 <div className="text-sm text-muted-foreground mt-4">
                     Chat settings coming soon...
                 </div>
@@ -23,7 +23,7 @@ export function FeatureSettings() {
 
             {/* Editor Subsection */}
             <FieldSet>
-                <div className="font-semibold text-lg">{t('editor.editor')}</div>
+                <div className="font-semibold text-lg">{t('common.editor')}</div>
                 <div className="text-sm text-muted-foreground mt-4">
                     Editor settings coming soon...
                 </div>

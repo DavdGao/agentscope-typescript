@@ -82,4 +82,11 @@ export default [
             'jsdoc/require-returns': 'warn',
         },
     },
+    {
+        files: ['**/components/ui/**/*.{ts,tsx}'],
+        rules: {
+            'jsdoc/require-description': 'off',
+            'jsdoc/require-returns': 'off',
+        },
+    },
 ];

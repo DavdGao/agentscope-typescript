@@ -1,9 +1,108 @@
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useTranslation } from '@/i18n/useI18n';
 import { ScheduleEvent } from '@/pages/schedule/event';
+
+interface DateCellProps {
+    day: number;
+    isToday: boolean;
+    events: ScheduleEvent[];
+    onEventClick: (event: ScheduleEvent) => void;
+    moreText: string;
+}
+
+/**
+ * DateCell component that dynamically adjusts the number of visible events based on cell height.
+ * @param root0
+ * @param root0.day
+ * @param root0.isToday
+ * @param root0.events
+ * @param root0.onEventClick
+ * @param root0.moreText
+ * @returns A calendar date cell element.
+ */
+function DateCell({ day, isToday, events, onEventClick, moreText }: DateCellProps) {
+    const cellRef = useRef<HTMLDivElement>(null);
+    const [maxVisibleEvents, setMaxVisibleEvents] = useState(3);
+
+    useEffect(() => {
+        if (!cellRef.current) return;
+
+        const resizeObserver = new ResizeObserver(entries => {
+            for (const entry of entries) {
+                const cellHeight = entry.contentRect.height;
+                // Calculate available height for events
+                // Cell padding: 8px (p-2)
+                // Date header: ~28px (w-6 h-6 + mb-1)
+                // Event item height: ~24px (text-xs + py-0.5 + space-y-1)
+                // More indicator: ~20px
+                const padding = 8;
+                const headerHeight = 28;
+                const eventHeight = 24;
+                const moreIndicatorHeight = 20;
+
+                const availableHeight = cellHeight - padding - headerHeight - moreIndicatorHeight;
+                const maxEvents = Math.max(0, Math.floor(availableHeight / eventHeight));
+                setMaxVisibleEvents(maxEvents);
+            }
+        });
+
+        resizeObserver.observe(cellRef.current);
+
+        return () => {
+            resizeObserver.disconnect();
+        };
+    }, []);
+
+    return (
+        <div
+            ref={cellRef}
+            className="border-border! border-r border-b p-2 hover:bg-accent cursor-pointer overflow-hidden"
+        >
+            <div className="flex items-start justify-between mb-1">
+                <div className="w-6 h-6 flex items-center justify-center">
+                    <div
+                        className={`text-sm ${
+                            isToday
+                                ? 'bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center'
+                                : ''
+                        }`}
+                    >
+                        {day}
+                    </div>
+                </div>
+            </div>
+            {/* Event indicators */}
+            <div className="space-y-1">
+                {events.slice(0, maxVisibleEvents).map(event => (
+                    <div
+                        key={event.id}
+                        className="flex flex-row justify-between text-xs py-0.5 text-secondary-foreground rounded cursor-pointer hover:bg-primary/20"
+                        title={`${event.time} - ${event.title}`}
+                        onClick={e => {
+                            e.stopPropagation();
+                            onEventClick(event);
+                        }}
+                    >
+                        <div className="flex flex-row flex-1 items-center gap-x-1 overflow-hidden">
+                            <div className="w-1 min-w-1 max-w-1 bg-primary border-primary h-full rounded" />
+                            <span className="truncate">{event.title}</span>
+                        </div>
+                        <span>{event.time}</span>
+                    </div>
+                ))}
+                {events.length > maxVisibleEvents && (
+                    <div className="text-xs text-muted-foreground px-1">
+                        +{events.length - maxVisibleEvents} {moreText}
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+}
 
 interface Props {
     events: ScheduleEvent[];
@@ -64,8 +163,10 @@ export function CalendarTabPage({ events, onEventClick, currentDate, onMonthChan
     // Get all days of the current month
     const currentMonthDays = Array.from({ length: lastDay.getDate() }, (_, i) => i + 1);
 
-    // Get the first few days of the next month to fill 6 rows
-    const totalCells = 42; // 6 rows x 7 columns
+    // Calculate the actual number of weeks needed for this month
+    const totalDaysNeeded = prevMonthDays.length + currentMonthDays.length;
+    const weeksNeeded = Math.ceil(totalDaysNeeded / 7);
+    const totalCells = weeksNeeded * 7;
     const remainingCells = totalCells - prevMonthDays.length - currentMonthDays.length;
     const nextMonthDays = Array.from({ length: remainingCells }, (_, i) => i + 1);
 
@@ -166,12 +267,15 @@ export function CalendarTabPage({ events, onEventClick, currentDate, onMonthChan
                 </div>
 
                 {/* Date grid */}
-                <div className="flex-1 grid grid-cols-7 grid-rows-6">
+                <div
+                    className={`flex-1 grid grid-cols-7`}
+                    style={{ gridTemplateRows: `repeat(${weeksNeeded}, minmax(0, 1fr))` }}
+                >
                     {/* Previous month dates */}
                     {prevMonthDays.map((day, index) => (
                         <div
                             key={`prev-${index}`}
-                            className="border-r border-b p-2 text-muted-foreground/50"
+                            className="border-r border-b border-border! p-2 text-muted-foreground/50"
                         >
                             <div className="text-sm">{day}</div>
                         </div>
@@ -187,43 +291,14 @@ export function CalendarTabPage({ events, onEventClick, currentDate, onMonthChan
                         const dayEvents = getEventsForDate(date);
 
                         return (
-                            <div
+                            <DateCell
                                 key={`current-${day}`}
-                                className="border-border! border-r border-b p-2 hover:bg-accent cursor-pointer overflow-hidden"
-                            >
-                                <div className="flex items-start justify-between mb-1">
-                                    <div
-                                        className={`text-sm ${
-                                            isToday
-                                                ? 'bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center'
-                                                : ''
-                                        }`}
-                                    >
-                                        {day}
-                                    </div>
-                                </div>
-                                {/* Event indicators */}
-                                <div className="space-y-1">
-                                    {dayEvents.slice(0, 3).map(event => (
-                                        <div
-                                            key={event.id}
-                                            className="text-xs px-1 py-0.5 bg-primary/10 text-primary rounded truncate cursor-pointer hover:bg-primary/20 transition-colors"
-                                            title={`${event.time} - ${event.title}`}
-                                            onClick={e => {
-                                                e.stopPropagation();
-                                                onEventClick(event);
-                                            }}
-                                        >
-                                            {event.time} {event.title}
-                                        </div>
-                                    ))}
-                                    {dayEvents.length > 3 && (
-                                        <div className="text-xs text-muted-foreground px-1">
-                                            +{dayEvents.length - 3} {t('schedule.more')}
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
+                                day={day}
+                                isToday={isToday}
+                                events={dayEvents}
+                                onEventClick={onEventClick}
+                                moreText={t('schedule.more')}
+                            />
                         );
                     })}
 

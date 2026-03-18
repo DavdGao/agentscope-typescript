@@ -1,22 +1,56 @@
-import { Calendar, List, Clock, MapPin, User, Plus } from 'lucide-react';
+import type { Schedule, ScheduleWithStatus } from '@shared/types/schedule';
+import { CronExpressionParser } from 'cron-parser';
+import { Calendar, List, Plus } from 'lucide-react';
 import * as React from 'react';
 
 import { Button } from '@/components/ui/button';
-import {
-    Drawer,
-    DrawerContent,
-    DrawerDescription,
-    DrawerFooter,
-    DrawerHeader,
-    DrawerTitle,
-} from '@/components/ui/drawer';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useSchedules } from '@/hooks/use-schedules';
+import { useSchedule } from '@/contexts/ScheduleContext';
 import { useTranslation } from '@/i18n/useI18n';
 import { CalendarTabPage } from '@/pages/schedule/calendar-tab-page';
 import { CreateScheduleDialog } from '@/pages/schedule/create-schedule-dialog';
 import { ScheduleEvent } from '@/pages/schedule/event';
 import { ListTabPage } from '@/pages/schedule/list-tab-page';
+import { ScheduleDetailDrawer } from '@/pages/schedule/schedule-detail-drawer';
+
+/**
+ * Expands a schedule into individual events within a date range.
+ *
+ * @param schedule - The schedule to expand.
+ * @param rangeStart - The start date of the range.
+ * @param rangeEnd - The end date of the range.
+ * @returns An array of schedule events.
+ */
+function expandScheduleToEvents(
+    schedule: Schedule,
+    rangeStart: Date,
+    rangeEnd: Date
+): ScheduleEvent[] {
+    const events: ScheduleEvent[] = [];
+    try {
+        const interval = CronExpressionParser.parse(schedule.cronExpr, {
+            currentDate: rangeStart,
+            endDate: rangeEnd,
+        });
+        while (interval.hasNext()) {
+            const date = interval.next().toDate();
+            const ts = date.getTime();
+            if (ts < schedule.startAt) continue;
+            if (schedule.endAt && ts > schedule.endAt) break;
+            const iso = date.toISOString();
+            events.push({
+                id: `${schedule.id}:${ts}`,
+                title: schedule.name,
+                date: iso.slice(0, 10),
+                time: iso.slice(11, 16),
+                content: schedule.description,
+            });
+        }
+    } catch {
+        // invalid cron expr — skip
+    }
+    return events;
+}
 
 /**
  * The schedule page component that displays schedules in calendar or list view.
@@ -25,25 +59,32 @@ import { ListTabPage } from '@/pages/schedule/list-tab-page';
  */
 export function SchedulePage() {
     const { t } = useTranslation();
+    const { schedules } = useSchedule();
     const [viewMode, setViewMode] = React.useState<'calendar' | 'list'>('calendar');
-    const [selectedEvent, setSelectedEvent] = React.useState<ScheduleEvent | null>(null);
-    const [isDrawerOpen, setIsDrawerOpen] = React.useState(false);
     const [currentDate, setCurrentDate] = React.useState(new Date());
-
-    const rangeStart = React.useMemo(() => {
-        return new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-    }, [currentDate]);
-    const rangeEnd = React.useMemo(() => {
-        return new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0, 23, 59, 59);
-    }, [currentDate]);
-
-    const { events, refresh } = useSchedules(rangeStart, rangeEnd);
+    const [selectedSchedule, setSelectedSchedule] = React.useState<ScheduleWithStatus | null>(null);
     const [isCreateOpen, setIsCreateOpen] = React.useState(false);
 
-    // Handle event click
+    const rangeStart = React.useMemo(
+        () => new Date(currentDate.getFullYear(), currentDate.getMonth(), 1),
+        [currentDate]
+    );
+    const rangeEnd = React.useMemo(
+        () => new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0, 23, 59, 59),
+        [currentDate]
+    );
+
+    const events = React.useMemo(() => {
+        return schedules
+            .filter(s => s.enabled)
+            .flatMap(s => expandScheduleToEvents(s, rangeStart, rangeEnd));
+    }, [schedules, rangeStart, rangeEnd]);
+
+    // event.id is `${schedule.id}:${ts}`, extract schedule and open drawer
     const handleEventClick = (event: ScheduleEvent) => {
-        setSelectedEvent(event);
-        setIsDrawerOpen(true);
+        const scheduleId = event.id.split(':')[0];
+        const schedule = schedules.find(s => s.id === scheduleId);
+        if (schedule) setSelectedSchedule(schedule);
     };
 
     return (
@@ -75,7 +116,6 @@ export function SchedulePage() {
             </div>
 
             <div className="flex-1 overflow-hidden rounded-t-3xl bg-white">
-                {/* Calendar grid */}
                 {viewMode === 'calendar' && (
                     <CalendarTabPage
                         events={events}
@@ -84,97 +124,16 @@ export function SchedulePage() {
                         onMonthChange={setCurrentDate}
                     />
                 )}
-
-                {/* List View */}
-                {viewMode === 'list' && (
-                    <ListTabPage events={events} onEventClick={handleEventClick} />
-                )}
+                {viewMode === 'list' && <ListTabPage />}
             </div>
-            {/* Event Detail Drawer */}
-            <Drawer open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
-                <DrawerContent>
-                    <div className="mx-auto w-full max-w-2xl">
-                        <DrawerHeader>
-                            <DrawerTitle>{selectedEvent?.title}</DrawerTitle>
-                            <DrawerDescription>
-                                {selectedEvent &&
-                                    new Date(selectedEvent.date + 'T00:00:00').toLocaleDateString(
-                                        'en-US',
-                                        {
-                                            weekday: 'long',
-                                            year: 'numeric',
-                                            month: 'long',
-                                            day: 'numeric',
-                                        }
-                                    )}
-                            </DrawerDescription>
-                        </DrawerHeader>
-                        <div className="p-4 pb-0 space-y-4">
-                            {/* Time */}
-                            <div className="flex items-start gap-3">
-                                <Clock className="h-5 w-5 text-muted-foreground mt-0.5" />
-                                <div>
-                                    <div className="font-medium">{t('schedule.time')}</div>
-                                    <div className="text-sm text-muted-foreground">
-                                        {selectedEvent?.time}
-                                    </div>
-                                </div>
-                            </div>
 
-                            {/* Location */}
-                            {selectedEvent?.location && (
-                                <div className="flex items-start gap-3">
-                                    <MapPin className="h-5 w-5 text-muted-foreground mt-0.5" />
-                                    <div>
-                                        <div className="font-medium">{t('schedule.location')}</div>
-                                        <div className="text-sm text-muted-foreground">
-                                            {selectedEvent.location}
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Attendees */}
-                            {selectedEvent?.attendees && selectedEvent.attendees.length > 0 && (
-                                <div className="flex items-start gap-3">
-                                    <User className="h-5 w-5 text-muted-foreground mt-0.5" />
-                                    <div>
-                                        <div className="font-medium">{t('schedule.attendees')}</div>
-                                        <div className="text-sm text-muted-foreground">
-                                            {selectedEvent.attendees.join(', ')}
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Description */}
-                            {selectedEvent?.content && (
-                                <div className="flex items-start gap-3">
-                                    <div className="h-5 w-5" /> {/* Spacer */}
-                                    <div>
-                                        <div className="font-medium">
-                                            {t('schedule.description')}
-                                        </div>
-                                        <div className="text-sm text-muted-foreground mt-1">
-                                            {selectedEvent.content}
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                        <DrawerFooter>
-                            <Button variant="outline" onClick={() => setIsDrawerOpen(false)}>
-                                {t('common.close')}
-                            </Button>
-                        </DrawerFooter>
-                    </div>
-                </DrawerContent>
-            </Drawer>
-            <CreateScheduleDialog
-                open={isCreateOpen}
-                onOpenChange={setIsCreateOpen}
-                onCreated={refresh}
+            <ScheduleDetailDrawer
+                schedule={selectedSchedule}
+                open={!!selectedSchedule}
+                onOpenChange={open => !open && setSelectedSchedule(null)}
             />
+
+            <CreateScheduleDialog open={isCreateOpen} onOpenChange={setIsCreateOpen} />
         </div>
     );
 }

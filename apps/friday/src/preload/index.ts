@@ -10,7 +10,13 @@ import type { GetItemsQuery, GetItemsResult } from '@shared/types/common';
 import type { Config } from '@shared/types/config';
 import type { Document } from '@shared/types/document';
 import type { MCPServerConfig, MCPServerState } from '@shared/types/mcp';
-import type { Schedule } from '@shared/types/schedule';
+import type {
+    Schedule,
+    ScheduleWithStatus,
+    ScheduleExecution,
+    ExecutionStartedEvent,
+    ExecutionFinishedEvent,
+} from '@shared/types/schedule';
 import type { SkillConfig, WatchDir } from '@shared/types/skill';
 import { contextBridge, ipcRenderer } from 'electron';
 
@@ -69,12 +75,43 @@ const api = {
             ipcRenderer.invoke('document:saveContent', id, content),
     },
     schedule: {
-        list: (): Promise<Schedule[]> => ipcRenderer.invoke('schedule:list'),
+        list: (): Promise<ScheduleWithStatus[]> => ipcRenderer.invoke('schedule:list'),
         create: (data: Omit<Schedule, 'id'>): Promise<Schedule> =>
             ipcRenderer.invoke('schedule:create', data),
         update: (id: string, data: Partial<Schedule>): Promise<Schedule> =>
             ipcRenderer.invoke('schedule:update', id, data),
         delete: (id: string): Promise<void> => ipcRenderer.invoke('schedule:delete', id),
+        getExecutions: (scheduleId: string): Promise<ScheduleExecution[]> =>
+            ipcRenderer.invoke('schedule:getExecutions', scheduleId),
+        subscribeExecutionStarted: (
+            callback: (event: ExecutionStartedEvent) => void
+        ): (() => void) => {
+            const channel = 'schedule:execution:started';
+            const handler = (_: Electron.IpcRendererEvent, event: ExecutionStartedEvent) =>
+                callback(event);
+            ipcRenderer.on(channel, handler);
+            return () => ipcRenderer.removeListener(channel, handler);
+        },
+        subscribeExecutionFinished: (
+            callback: (event: ExecutionFinishedEvent) => void
+        ): (() => void) => {
+            const channel = 'schedule:execution:finished';
+            const handler = (_: Electron.IpcRendererEvent, event: ExecutionFinishedEvent) =>
+                callback(event);
+            ipcRenderer.on(channel, handler);
+            return () => ipcRenderer.removeListener(channel, handler);
+        },
+        getExecutionMessages: (scheduleId: string, executionId: string): Promise<Msg[]> =>
+            ipcRenderer.invoke('schedule:getExecutionMessages', scheduleId, executionId),
+        subscribeAgentEvents: (
+            scheduleId: string,
+            callback: (event: AgentEvent) => void
+        ): (() => void) => {
+            const channel = `agent:event:schedule:${scheduleId}`;
+            const handler = (_: Electron.IpcRendererEvent, event: AgentEvent) => callback(event);
+            ipcRenderer.on(channel, handler);
+            return () => ipcRenderer.removeListener(channel, handler);
+        },
     },
     mcp: {
         getAll: (): Promise<MCPServerState[]> => ipcRenderer.invoke('mcp:getAll'),

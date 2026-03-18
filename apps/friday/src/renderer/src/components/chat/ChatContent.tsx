@@ -2,8 +2,10 @@ import { ContentBlock, Msg, ToolCallBlock } from '@agentscope-ai/agentscope/mess
 import React from 'react';
 import { useRef, useEffect } from 'react';
 
+import { EmptyMessage } from './Empty';
 import { MessageBubble } from '@/components/chat/MessageBubble';
 import { TextInput } from '@/components/input/TextInput';
+import { cn } from '@/lib/utils';
 
 interface ChatContentProps {
     msgs: Msg[];
@@ -11,6 +13,7 @@ interface ChatContentProps {
     onSend: (content: ContentBlock[]) => void;
     onUserConfirm: (toolCall: ToolCallBlock, confirm: boolean, replyId: string) => void;
     autoComplete?: (input: string) => string | null;
+    className?: string;
 }
 
 const ChatContentComponent: React.FC<ChatContentProps> = ({
@@ -19,6 +22,7 @@ const ChatContentComponent: React.FC<ChatContentProps> = ({
     onSend,
     onUserConfirm,
     autoComplete,
+    className,
 }) => {
     const scrollAreaRef = useRef<HTMLDivElement>(null);
     const prevMsgCountRef = useRef<number>(0);
@@ -64,24 +68,27 @@ const ChatContentComponent: React.FC<ChatContentProps> = ({
     }, []);
 
     return (
-        <div className="flex flex-col h-full items-center p-2 gap-4">
+        <div className={cn('flex flex-col h-full w-full items-center p-2 gap-4', className)}>
             <div
                 ref={scrollAreaRef}
-                className="flex-1 w-full max-w-[700px] overflow-y-auto [&_[data-slot='scroll-area-scrollbar']]:hidden"
+                className="flex-1 w-full max-w-full overflow-auto no-scrollbar overflow-x-hidden"
             >
-                {/**/}
-                <div className="flex flex-col gap-4 pr-4 w-full max-w-full">
-                    {msgs.map(message => (
-                        <MessageBubble
-                            key={message.id}
-                            message={message}
-                            onUserConfirm={onUserConfirm}
-                        />
-                    ))}
+                <div className="flex flex-col gap-4 size-full max-w-full">
+                    {msgs.length > 0 ? (
+                        msgs.map(message => (
+                            <MessageBubble
+                                key={message.id}
+                                message={message}
+                                onUserConfirm={onUserConfirm}
+                            />
+                        ))
+                    ) : (
+                        <EmptyMessage />
+                    )}
                 </div>
             </div>
             <TextInput
-                className="min-w-[700px] max-w-[700px]"
+                className="min-w-full max-w-full w-full"
                 onSend={onSend}
                 disabled={sending}
                 autoComplete={autoComplete}

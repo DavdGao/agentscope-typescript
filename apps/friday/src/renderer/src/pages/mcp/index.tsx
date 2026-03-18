@@ -4,6 +4,7 @@ import { useState } from 'react';
 
 import { EmptyMCP, EmptySearch } from './empty';
 import { ImportDialog } from './import-dialog';
+import { DeleteDialog } from '@/components/dialog/DeleteDialog';
 import { Button } from '@/components/ui/button';
 import {
     Card,
@@ -27,6 +28,7 @@ export function MCPPage() {
     const { servers, loading, add, remove, connect, disconnect } = useMcp();
     const [searchQuery, setSearchQuery] = useState('');
     const [connectingId, setConnectingId] = useState<string | null>(null);
+    const [toDeleteMCPId, setToDeleteMCPId] = useState<string | null>(null);
 
     const handleToggleConnect = async (server: MCPServerState) => {
         const id = server.config.id;
@@ -95,6 +97,24 @@ export function MCPPage() {
                 </div>
             </div>
 
+            <DeleteDialog
+                open={toDeleteMCPId !== null}
+                setOpen={open => {
+                    if (!open) setToDeleteMCPId(null);
+                }}
+                title={t('mcp.deleteMCP.title')}
+                description={t('mcp.deleteMCP.description', {
+                    name: servers.find(s => s.config.id === toDeleteMCPId)?.config.name || '',
+                })}
+                onConfirm={async () => {
+                    if (toDeleteMCPId) {
+                        remove(toDeleteMCPId);
+                        setToDeleteMCPId(null);
+                    }
+                }}
+                successToast={t('mcp.deleteMCP.successToast')}
+            />
+
             {loading ? (
                 <div className="flex flex-1 items-center justify-center">
                     <Loader2 className="size-6 animate-spin text-muted-foreground" />
@@ -145,7 +165,7 @@ export function MCPPage() {
                                             <Button
                                                 size="icon-sm"
                                                 variant="secondary"
-                                                onClick={() => remove(server.config.id)}
+                                                onClick={() => setToDeleteMCPId(server.config.id)}
                                                 className="opacity-0 group-hover:opacity-100 transition-opacity"
                                             >
                                                 <Trash2 />
@@ -190,7 +210,7 @@ export function MCPPage() {
                                             {server.tools && server.tools.length > 0 && (
                                                 <div className="flex justify-between">
                                                     <span className="text-muted-foreground">
-                                                        {t('mcp.tools')}:
+                                                        {t('common.tools')}:
                                                     </span>
                                                     <span className="font-medium">
                                                         {server.tools.length}

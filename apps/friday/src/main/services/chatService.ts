@@ -9,30 +9,14 @@ import {
 } from '@agentscope-ai/agentscope/event';
 import type { Msg } from '@agentscope-ai/agentscope/message';
 import { createMsg } from '@agentscope-ai/agentscope/message';
-import {
-    OllamaChatModel,
-    ChatModelBase,
-    DashScopeChatModel,
-    DeepSeekChatModel,
-    OpenAIChatModel,
-} from '@agentscope-ai/agentscope/model';
 import { LocalFileStorage } from '@agentscope-ai/agentscope/storage';
-import { Bash, Toolkit, Write, Edit, Read, Glob, Grep } from '@agentscope-ai/agentscope/tool';
 import type { Session, GetSessionsQuery, GetSessionsResult } from '@shared/types/chat';
 import type { IpcMain, WebContents } from 'electron';
 
 import { runAgent } from '../agent';
 import { getConfig } from '../config';
-import { mcpGetAvailableClients } from './mcpService';
-import { skillGetAll } from './skillService';
-import {
-    ScheduleCreate,
-    ScheduleDelete,
-    ScheduleGet,
-    ScheduleList,
-    ScheduleUpdate,
-} from '../scheduler/tools';
 import { readJSON, writeJSON, appendJSONL, readJSONL, remove } from '../storage';
+import { getModel, getToolkit } from './utils';
 import { PATHS } from '../storage/paths';
 
 /**
@@ -115,71 +99,15 @@ export function registerChatHandlers(ipcMain: IpcMain, webContents: WebContents)
                 );
             }
 
-            let model: ChatModelBase;
-            switch (modelConfig.provider) {
-                case 'dashscope':
-                    model = new DashScopeChatModel({
-                        modelName: modelConfig.modelName,
-                        apiKey: modelConfig.apiKey,
-                        stream: true,
-                    });
-                    break;
-                case 'openai':
-                    model = new OpenAIChatModel({
-                        modelName: modelConfig.modelName,
-                        apiKey: modelConfig.apiKey,
-                        stream: true,
-                    });
-                    break;
-                case 'ollama':
-                    model = new OllamaChatModel({
-                        modelName: modelConfig.modelName,
-                        stream: true,
-                    });
-                    break;
-                case 'deepseek':
-                    model = new DeepSeekChatModel({
-                        modelName: modelConfig.modelName,
-                        apiKey: modelConfig.apiKey,
-                        stream: true,
-                    });
-                    break;
-            }
+            const model = getModel(modelConfig);
 
             const storage = new LocalFileStorage({
-                rootDir: PATHS.root,
-                userId: 'chat',
-                sessionId,
-                offloadRootDir: PATHS.offloadDir(sessionId),
+                pathSegments: [PATHS.root, 'chat', sessionId],
+                offloadPathSegments: [PATHS.offloadDir(sessionId)],
             });
 
-            // Skills
-            const skills = skillGetAll().map(skill => skill.dirPath);
-
-            const toolkit = new Toolkit({
-                tools: [
-                    Bash(),
-                    Glob(),
-                    Write(),
-                    Edit(),
-                    Read(),
-                    Glob(),
-                    Grep(),
-                    ScheduleCreate(sessionId),
-                    ScheduleDelete(),
-                    ScheduleList(),
-                    ScheduleGet(),
-                    ScheduleUpdate(),
-                ],
-                skills,
-                builtInSkillTool: true,
-            });
-
-            // Register all available MCP clients
-            const mcpClients = mcpGetAvailableClients();
-            for (const client of mcpClients) {
-                await toolkit.registerMCPClient({ client });
-            }
+            // tool
+            const toolkit = await getToolkit(sessionId);
 
             // Build system prompt
             let sysPrompt: string;

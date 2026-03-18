@@ -1,3 +1,5 @@
+import { ModelProvider } from '@shared/types/config';
+
 /**
  * Format a number to a human-readable string with commas and suffixes
  * @param num - The number to format
@@ -25,3 +27,39 @@ export function formatNumber(num: number): string {
 
     return num.toLocaleString();
 }
+
+/**
+ * Returns a display name for a model provider.
+ * @param provider - The model provider identifier.
+ * @returns A human-readable provider name.
+ */
+export function formatProviderName(provider: ModelProvider) {
+    switch (provider) {
+        case 'dashscope':
+            return 'DashScope';
+        case 'openai':
+            return 'OpenAI';
+        case 'ollama':
+            return 'Ollama';
+        case 'deepseek':
+            return 'DeepSeek';
+        default:
+            return provider;
+    }
+}
+
+export const formatDuration = (startTime: number, endTime?: number) => {
+    if (!endTime) return '-';
+    const duration = endTime - startTime;
+    const seconds = Math.floor(duration / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const hours = Math.floor(minutes / 60);
+
+    if (hours > 0) {
+        return `${hours}h ${minutes % 60}m`;
+    } else if (minutes > 0) {
+        return `${minutes}m ${seconds % 60}s`;
+    } else {
+        return `${seconds}s`;
+    }
+};
