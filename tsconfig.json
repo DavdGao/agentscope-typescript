@@ -14,7 +14,7 @@
             "path": "./packages/agentscope"
         },
         {
-            "path": "./apps/friday"
+            "path": "./apps/desktop"
         }
     ]
 }

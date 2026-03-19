@@ -44,7 +44,7 @@ jobs:
                   node-version: 20.x
 
             - name: Check i18n keys
-              run: node apps/friday/scripts/check-i18n.js
+              run: node apps/desktop/scripts/check-i18n.js
 
     test:
         runs-on: ${{ matrix.os }}
@@ -89,8 +89,8 @@ jobs:
                   node -e "const { Agent } = require('@agentscope-ai/agentscope/agent'); console.log('CJS import successful:', typeof Agent === 'function');"
                   node --input-type=module -e "import { Agent } from '@agentscope-ai/agentscope/agent'; console.log('ESM import successful:', typeof Agent === 'function');"
 
-            - name: Build friday app
-              run: pnpm run build:friday
+            - name: Build Desktop app
+              run: pnpm run build:desktop
 
             - name: Run unit tests
               run: pnpm run test:agentscope
