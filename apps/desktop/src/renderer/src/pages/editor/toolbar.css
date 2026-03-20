@@ -1,0 +1,62 @@
+.milkdown:has(.milkdown-link-preview[data-show='true']) .milkdown-toolbar,
+.milkdown:has(.milkdown-link-edit[data-show='true']) .milkdown-toolbar {
+    display: none;
+}
+
+.milkdown .milkdown-toolbar[data-show='false'] {
+    display: none;
+}
+
+.milkdown .milkdown-toolbar {
+    z-index: 10;
+    position: absolute;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-evenly;
+    background: white;
+    /*box-shadow: var(--crepe-shadow-1);*/
+    box-shadow: none;
+    border: 1px solid var(--border);
+    border-radius: 1rem;
+    overflow: hidden;
+}
+
+.milkdown .milkdown-toolbar .divider {
+    width: 1px;
+    background: var(--border);
+    height: 20px;
+    margin: 10px;
+}
+
+.milkdown .milkdown-toolbar .toolbar-item {
+    width: 26px;
+    height: 26px;
+    margin: 0 6px;
+    padding: 4px;
+    cursor: pointer;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.milkdown .milkdown-toolbar .toolbar-item:hover {
+    background: var(--crepe-color-hover);
+}
+
+.milkdown .milkdown-toolbar .toolbar-item:active {
+    background: var(--crepe-color-selected);
+}
+
+.milkdown .milkdown-toolbar .toolbar-item svg {
+    height: 20px;
+    width: 20px;
+    color: var(--primary);
+    fill: var(--primary);
+}
+
+.milkdown .milkdown-toolbar .toolbar-item.active svg {
+    color: var(--crepe-color-primary);
+    fill: var(--crepe-color-primary);
+}

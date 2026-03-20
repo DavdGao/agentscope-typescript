@@ -1,15 +1,8 @@
-import { Editor, rootCtx, defaultValueCtx } from '@milkdown/kit/core';
-import { clipboard } from '@milkdown/kit/plugin/clipboard';
-import { history } from '@milkdown/kit/plugin/history';
-import { indent } from '@milkdown/kit/plugin/indent';
-import { listener, listenerCtx } from '@milkdown/kit/plugin/listener';
-import { trailing } from '@milkdown/kit/plugin/trailing';
-import { commonmark } from '@milkdown/kit/preset/commonmark';
-import { gfm } from '@milkdown/kit/preset/gfm';
-import { automd } from '@milkdown/plugin-automd';
+import { Crepe, CrepeFeature } from '@milkdown/crepe';
+import { listenerCtx } from '@milkdown/kit/plugin/listener';
 import { Milkdown, MilkdownProvider, useEditor } from '@milkdown/react';
 import { replaceAll } from '@milkdown/utils';
-import '@milkdown/crepe/theme/frame.css';
+import './frame.css';
 import '@milkdown/crepe/theme/common/reset.css';
 import '@milkdown/crepe/theme/common/list-item.css';
 import '@milkdown/crepe/theme/common/style.css';
@@ -22,7 +15,8 @@ import '@milkdown/crepe/theme/common/latex.css';
 import '@milkdown/crepe/theme/common/link-tooltip.css';
 import '@milkdown/crepe/theme/common/placeholder.css';
 import '@milkdown/crepe/theme/common/prosemirror.css';
-import '@milkdown/crepe/theme/common/toolbar.css';
+import './toolbar.css';
+import './slash-menu.css';
 import { PanelLeft, PanelLeftClose } from 'lucide-react';
 import { FC, useState, useRef, useEffect, CSSProperties } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -48,9 +42,14 @@ interface Props {
     onChange?: (markdown: string) => void;
 }
 
+interface Props {
+    value?: string;
+    onChange?: (markdown: string) => void;
+}
+
 export const MilkdownEditor: FC<Props> = ({ value, onChange }) => {
     const onChangeRef = useRef(onChange);
-    const editorRef = useRef<Editor | null>(null);
+    const crepeRef = useRef<Crepe | null>(null);
     const prevExternalValue = useRef(value);
 
     useEffect(() => {
@@ -58,45 +57,31 @@ export const MilkdownEditor: FC<Props> = ({ value, onChange }) => {
     }, [onChange]);
 
     useEditor(root => {
-        const editor = Editor.make()
-            // 挂载编辑器的 DOM 根节点
-            .config(ctx => ctx.set(rootCtx, root))
-            // 设置初始 markdown 内容（受控模式下只用于首次渲染）
-            .config(ctx => ctx.set(defaultValueCtx, value ?? ''))
-            // 监听 markdown 变化，实现受控模式的 onChange 回调
-            .config(ctx => {
-                ctx.get(listenerCtx).markdownUpdated((_ctx, markdown, prevMarkdown) => {
-                    if (markdown !== prevMarkdown) {
-                        prevExternalValue.current = markdown;
-                        onChangeRef.current?.(markdown);
-                    }
-                });
-            })
-            // commonmark：基础 markdown 语法支持（标题、粗体、斜体、列表、代码块等）
-            .use(commonmark)
-            // gfm：GitHub Flavored Markdown 扩展（表格、任务列表、删除线等）
-            .use(gfm)
-            // listener：提供 markdownUpdated 等事件监听能力，受控模式必须
-            .use(listener)
-            // history：撤销/重做支持（Ctrl+Z / Ctrl+Shift+Z）
-            .use(history)
-            // indent：Tab 键缩进支持，可配置缩进类型（space/tab）和大小
-            .use(indent)
-            // trailing：确保文档末尾始终有一个空段落，方便光标定位
-            .use(trailing)
-            // clipboard：处理复制粘贴，支持从外部粘贴 markdown/html 内容
-            .use(clipboard)
-            .use(automd);
-
-        editorRef.current = editor;
-        return editor;
+        const crepe = new Crepe({
+            root,
+            defaultValue: value ?? '',
+            featureConfigs: {
+                [CrepeFeature.ImageBlock]: {
+                    proxyDomURL: (url: string) => url,
+                },
+            },
+        });
+        crepe.editor.config(ctx => {
+            ctx.get(listenerCtx).markdownUpdated((_ctx, markdown, prevMarkdown) => {
+                if (markdown !== prevMarkdown) {
+                    prevExternalValue.current = markdown;
+                    onChangeRef.current?.(markdown);
+                }
+            });
+        });
+        crepeRef.current = crepe;
+        return crepe;
     }, []);
 
-    // 受控模式：外部 value 变化时，用 replaceAll 同步到编辑器
     useEffect(() => {
         if (value === undefined || value === prevExternalValue.current) return;
         prevExternalValue.current = value;
-        editorRef.current?.action(replaceAll(value));
+        crepeRef.current?.editor.action(replaceAll(value));
     }, [value]);
 
     return <Milkdown />;
@@ -196,7 +181,7 @@ export function EditorPage() {
                     }}
                 />
             )}
-            <div className="flex flex-rowbg-white h-full overflow-y-auto flex-1 border-r">
+            <div className="flex bg-white h-full overflow-y-auto overflow-x-hidden flex-1 min-w-0 border-r">
                 <MilkdownProvider>
                     <MilkdownEditor
                         value={content}
@@ -221,7 +206,7 @@ export function EditorPage() {
                     />
                 </MilkdownProvider>
             </div>
-            <div className="flex flex-0.5 max-w-xl h-full overflow-hidden">
+            <div className="flex flex-0.5 max-w-xl w-xl min-w-xl h-full overflow-hidden">
                 <ChatContent
                     msgs={messages}
                     sending={sending}
