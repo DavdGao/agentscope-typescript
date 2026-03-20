@@ -1,58 +1,53 @@
 {
     "name": "@agentscope-ai/agentscope",
-    "version": "0.0.1",
+    "version": "0.0.2",
     "description": "",
     "exports": {
         "./message": {
-            "import": "./dist/esm/message/index.js",
-            "require": "./dist/cjs/message/index.js",
-            "types": "./dist/types/message/index.d.ts"
+            "types": "./dist/message/index.d.ts",
+            "import": "./dist/message/index.mjs",
+            "require": "./dist/message/index.js"
         },
         "./model": {
-            "import": "./dist/esm/model/index.js",
-            "require": "./dist/cjs/model/index.js",
-            "types": "./dist/types/model/index.d.ts"
+            "types": "./dist/model/index.d.ts",
+            "import": "./dist/model/index.mjs",
+            "require": "./dist/model/index.js"
         },
         "./tool": {
-            "import": "./dist/esm/tool/index.js",
-            "require": "./dist/cjs/tool/index.js",
-            "types": "./dist/types/tool/index.d.ts"
+            "types": "./dist/tool/index.d.ts",
+            "import": "./dist/tool/index.mjs",
+            "require": "./dist/tool/index.js"
         },
         "./agent": {
-            "import": "./dist/esm/agent/index.js",
-            "require": "./dist/cjs/agent/index.js",
-            "types": "./dist/types/agent/index.d.ts"
+            "types": "./dist/agent/index.d.ts",
+            "import": "./dist/agent/index.mjs",
+            "require": "./dist/agent/index.js"
         },
         "./formatter": {
-            "import": "./dist/esm/formatter/index.js",
-            "require": "./dist/cjs/formatter/index.js",
-            "types": "./dist/types/formatter/index.d.ts"
+            "types": "./dist/formatter/index.d.ts",
+            "import": "./dist/formatter/index.mjs",
+            "require": "./dist/formatter/index.js"
         },
         "./event": {
+            "types": "./dist/event/index.d.ts",
             "development": "./src/event/index.ts",
-            "import": "./dist/esm/event/index.js",
-            "require": "./dist/cjs/event/index.js",
-            "types": "./dist/types/event/index.d.ts"
-        },
-        "./module": {
-            "import": "./dist/esm/module/index.js",
-            "require": "./dist/cjs/module/index.js",
-            "types": "./dist/types/module/index.d.ts"
+            "import": "./dist/event/index.mjs",
+            "require": "./dist/event/index.js"
         },
         "./mcp": {
-            "import": "./dist/esm/mcp/index.js",
-            "require": "./dist/cjs/mcp/index.js",
-            "types": "./dist/types/mcp/index.d.ts"
+            "types": "./dist/mcp/index.d.ts",
+            "import": "./dist/mcp/index.mjs",
+            "require": "./dist/mcp/index.js"
         },
         "./storage": {
-            "import": "./dist/esm/storage/index.js",
-            "require": "./dist/cjs/storage/index.js",
-            "types": "./dist/types/storage/index.d.ts"
+            "types": "./dist/storage/index.d.ts",
+            "import": "./dist/storage/index.mjs",
+            "require": "./dist/storage/index.js"
         }
     },
     "scripts": {
-        "build": "tsc -p tsconfig.cjs.json && tsc -p tsconfig.esm.json",
-        "dev": "tsc -p tsconfig.esm.json --watch",
+        "build": "tsup",
+        "dev": "tsup --watch",
         "test": "jest",
         "clean": "rm -rf dist",
         "docs:generate": "typedoc"
@@ -62,6 +57,7 @@
         "@commitlint/config-conventional": "^20.2.0",
         "@types/jest": "^30.0.0",
         "@types/mime-types": "^3.0.1",
+        "@types/node": "^22.19.15",
         "@types/uuid": "^10.0.0",
         "@typescript-eslint/eslint-plugin": "^8.49.0",
         "@typescript-eslint/parser": "^8.49.0",
@@ -75,6 +71,7 @@
         "lint-staged": "^16.2.7",
         "prettier": "^3.7.4",
         "ts-jest": "^29.4.6",
+        "tsup": "^8.5.1",
         "typedoc": "^0.28.17",
         "typedoc-plugin-markdown": "^4.10.0",
         "typescript": "^5.5.3"

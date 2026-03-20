@@ -5,9 +5,9 @@
     "description": "AgentScope TypeScript monorepo",
     "scripts": {
         "build:agentscope": "pnpm --filter @agentscope-ai/agentscope build",
-        "build:friday": "cd apps/friday && pnpm build",
+        "build:desktop": "cd apps/desktop && pnpm build",
         "dev:agentscope": "pnpm --filter @agentscope-ai/agentscope dev",
-        "dev:friday": "cd apps/friday && pnpm dev",
+        "dev:desktop": "cd apps/desktop && pnpm dev",
         "test:agentscope": "pnpm --filter @agentscope-ai/agentscope test",
         "clean:agentscope": "pnpm --filter @agentscope-ai/agentscope clean",
         "format": "prettier --write . && eslint . --ext .ts,.tsx --fix",

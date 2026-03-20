@@ -22,23 +22,21 @@ export class LocalFileStorage extends StorageBase {
 
     /**
      * Initialize a LocalFileStorage instance.
-     * @param props
-     * @param props.rootDir - Root directory for storage
-     * @param props.sessionId - Optional session identifier
-     * @param props.userId - Optional user identifier
-     * @param props.offloadRootDir - Optional directory for offloading compressed context (if agentic search is enabled)
+     * @param root0
+     * @param root0.pathSegments - Path segments to determine the directory for saving agent state (e.g. ['rootDir', '{sessionId}'])
+     * @param root0.offloadPathSegments - Optional path segments for offloading compressed context for agentic search (e.g. ['rootDir', 'offload'])
      */
-    constructor(props: {
-        rootDir: string;
-        sessionId?: string;
-        userId?: string;
-        offloadRootDir?: string;
+    constructor({
+        pathSegments = [],
+        offloadPathSegments = [],
+    }: {
+        pathSegments?: string[];
+        offloadPathSegments?: string[];
     }) {
         super();
-        this.saveDir = path.join(props.rootDir, props.userId || '', props.sessionId || '');
-        this.offloadDir = props.offloadRootDir
-            ? path.join(props.offloadRootDir, props.userId || '', props.sessionId || '')
-            : undefined;
+        this.saveDir = path.join(...pathSegments);
+        this.offloadDir =
+            offloadPathSegments.length > 0 ? path.join(...offloadPathSegments) : undefined;
     }
 
     /**
@@ -50,7 +48,7 @@ export class LocalFileStorage extends StorageBase {
     async loadAgentState(options?: { agentId?: string }): Promise<AgentState> {
         const agentDir = path.join(this.saveDir, options?.agentId || '');
 
-        // 判断这个dir是否存在
+        // If the agent directory doesn't exist, return empty state
         if (!fs.existsSync(agentDir)) {
             console.log(`Agent directory ${agentDir} does not exist. Returning empty state.`);
             return {
@@ -202,8 +200,8 @@ export class LocalFileStorage extends StorageBase {
     /**
      * Offload the compressed context to external storage for agentic search if needed.
      * @param options
-     * @param options.agentId
-     * @param options.msgs
+     * @param options.agentId - The agent identifier
+     * @param options.msgs - The messages to offload
      * @returns The file path of the offloaded context, or undefined if offloading is not implemented or not needed
      */
     async offloadContext(options: { agentId?: string; msgs: Msg[] }): Promise<string | undefined> {
