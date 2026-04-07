@@ -91,9 +91,9 @@
         "deleteConfirm": "Are you sure you want to delete this document? This action cannot be undone.",
         "documents": "Documents",
         "leaveWhileRunning": {
-            "title": "Document being modified",
+            "confirm": "Leave anyway",
             "description": "Leaving will interrupt the agent's modifications.",
-            "confirm": "Leave anyway"
+            "title": "Document being modified"
         },
         "placeholder": "Please enter...",
         "renameDescription": "Enter a new name for this document."
